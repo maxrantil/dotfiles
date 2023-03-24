@@ -1,4 +1,0 @@
-#!/bin/sh
-
-nohup protonmail-bridge --noninteractive > ~/.config/mutt/pm_bridge_log 2>&1 &
-disown
