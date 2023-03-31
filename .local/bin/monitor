@@ -5,4 +5,4 @@
 laptop=$(xrandr | grep connected | awk '{print $1}' | head -1)
 external=$(xrandr | grep connected | awk '{print $1}' | sed -n 2p)
 
-xrandr --output $external --mode 1600x900 --right-of $laptop
+xrandr --output $external --mode 1920×1080 --right-of $laptop
