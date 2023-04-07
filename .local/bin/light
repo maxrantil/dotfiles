@@ -1,0 +1,41 @@
+#!/bin/bash
+
+## Change the bightness of the laptop screen
+
+MAX=120000
+MIN=100
+
+set -e
+
+file="/sys/class/backlight/intel_backlight/brightness"
+current=$(cat "$file")
+new="$current"
+
+if [ "$2" != "" ]
+then
+    val=$(echo "$2*$MAX/100" | bc)
+elif [ $2 -gt 100 ]
+then
+	val=100
+elif [ $2 -lt 0 ]
+then
+	val=0
+fi
+
+if [ "$1" = "-inc" ]
+then
+    new=$(( current + $val ))
+elif [ "$1" = "-dec" ]
+then
+    new=$(( current - $val ))
+fi
+
+if [ $new -gt $MAX ]
+then
+    new=$MAX
+elif [ $new -lt $MIN ]
+then
+    new=$MIN
+fi
+
+echo $new > "$file"
