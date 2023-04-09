@@ -1,0 +1,9 @@
+#!/bin/bash
+
+## Change permissions for the file that controls the brightness of the screen
+sudo chmod 666 /sys/class/backlight/intel_backlight/brightness
+
+/usr/bin/sleep 1
+
+## Start with minimun backlight
+/home/mqx/.local/bin/light -dec 100
