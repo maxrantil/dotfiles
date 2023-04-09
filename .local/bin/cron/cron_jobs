@@ -1,0 +1,8 @@
+## Uppdate RSS feed
+*/45 */4 * * *		export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/newsup
+
+## Update packages
+@reboot			export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/checkup
+
+## Activate light
+@reboot			/home/mqx/.local/bin/light_activation
