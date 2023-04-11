@@ -1,0 +1,4 @@
+#!/bin/bash
+## Activate protonmail-bridge after connection is applied
+nohup tmux new-session -d -s mail > /dev/null 2>&1 &
+notify-send "📧 Mutt" "protonmail-bridge activated in a tmux session with nohup"
