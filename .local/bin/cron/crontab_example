@@ -1,0 +1,20 @@
+TZ=EEST
+
+# Crontabs
+### 'export DISPLAY=:0.0' is for making notifications with notify-send work
+
+## Uppdate RSS feed
+*/45 */4 * * *		export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/newsup
+
+## Activate internet
+@reboot			/usr/bin/NetworkManager -n
+
+## Activate light
+@reboot			/home/mqx/.local/bin/light_activation
+
+## Activate calcurse reminders
+@reboot			/usr/bin/sleep 12; export DISPLAY=:0.0; sh /home/mqx/.local/bin/calcurse_reminders || /usr/bin/notify-send "❗ Error opening calcurse_reminders ❗"
+
+## Update packages
+### for being sure internet connection is established we use 'sleep 12'
+@reboot			/usr/bin/sleep 42; export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/checkup
