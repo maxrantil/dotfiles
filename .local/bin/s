@@ -1,8 +1,0 @@
-#!/bin/bash
-## Activate protonmail-bridge after connection is applied
-nohup tmux new-session -d -s mail > /dev/null 2>&1 &
-
-## Activate the notifications for calcurse activities
-/usr/bin/nohup /usr/bin/python /home/mqx/.local/bin/run_ccursereminders.py 1  > /dev/null 2>&1 &
-/usr/bin/nohup /usr/bin/python /home/mqx/.local/bin/run_ccursereminders.py 4 > /dev/null 2>&1 &
-/usr/bin/nohup /usr/bin/python /home/mqx/.local/bin/run_ccursereminders.py 16 > /dev/null 2>&1 &

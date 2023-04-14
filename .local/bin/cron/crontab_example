@@ -6,15 +6,14 @@ TZ=EEST
 ## Uppdate RSS feed
 */45 */4 * * *		export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/newsup
 
-## Activate internet
-@reboot			/usr/bin/NetworkManager -n
-
 ## Activate light
 @reboot			/home/mqx/.local/bin/light_activation
 
+## Activate ProtonVPN
+@reboot			/usr/bin/sleep 12; export DISPLAY=:0.0; sh /home/mqx/.local/bin/proton_vpn
+
 ## Activate calcurse reminders
-@reboot			/usr/bin/sleep 12; export DISPLAY=:0.0; sh /home/mqx/.local/bin/calcurse_reminders || /usr/bin/notify-send "❗ Error opening calcurse_reminders ❗"
+@reboot			/usr/bin/sleep 300; export DISPLAY=:0.0; sh /home/mqx/.local/bin/calcurse_reminders || /usr/bin/notify-send "❗ Error opening calcurse_reminders ❗"
 
 ## Update packages
-### for being sure internet connection is established we use 'sleep 12'
-@reboot			/usr/bin/sleep 42; export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/checkup
+@reboot			/usr/bin/sleep 120; export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/checkup

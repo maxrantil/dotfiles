@@ -1,0 +1,15 @@
+#!/bin/bash
+
+sudo protonvpn c --cc SE
+sleep 8
+
+file="/tmp/pvpn"
+sudo protonvpn status | awk 'NR==4, NR==15' > $file
+stat="$(sudo protonvpn status | awk 'NR==4 {print $2}')"
+
+
+if [ "$stat" = "Connected" ]; then
+	notify-send  "🙈 ProtonVPN" "$(cat $file)"
+else
+	notify-send "❗ 🙈 ProtonVPN ❗" "❗ Error with connection ❗"
+fi
