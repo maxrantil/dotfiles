@@ -37,6 +37,7 @@ set noshowcmd
 	set scrolloff=8
 	set undodir=/home/mqx/.config/nvim/undodir
 	set undofile
+	nnoremap U :UndotreeToggle<CR>
 " Some basics:
 	nnoremap c "_c
 	set nocompatible
