@@ -1,19 +1,23 @@
 TZ=EEST
+# m h  dom mon dow   command
 
 # Crontabs
 ### 'export DISPLAY=:0.0' is for making notifications with notify-send work
 
-## Uppdate RSS feed
+## Update RSS feed
 */45 */4 * * *		export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/newsup
+
+## Get battery notifications
+*/5 * * * *		export DISPLAY=:0.0; sh /home/mqx/.local/bin/battery_warning
+
+## Clean up the undo history if no changes has occurred in 90 days
+43 00 * * 3		find /home/mqx/.config/nvim/undodir -type f -mtime +90 -delete
 
 ## Activate light
 @reboot			/home/mqx/.local/bin/light_activation
 
 ## Activate ProtonVPN
 @reboot			/usr/bin/sleep 12; export DISPLAY=:0.0; sh /home/mqx/.local/bin/proton_vpn
-
-## Activate calcurse reminders
-@reboot			/usr/bin/sleep 300; export DISPLAY=:0.0; sh /home/mqx/.local/bin/calcurse_reminders || /usr/bin/notify-send "❗ Error opening calcurse_reminders ❗"
 
 ## Update packages
 @reboot			/usr/bin/sleep 120; export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/checkup
