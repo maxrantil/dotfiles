@@ -6,9 +6,7 @@ battery_status=$(cat $file)
 
 # Set up a flag to track whether or not the warning has been issued
 fully_charged=false
-under_50=false
-under_30=false
-under_20=false
+under=false
 
 #bat_func() {
 #	# Check if the battery status is below 50%
@@ -34,48 +32,40 @@ under_20=false
 
 
 # Check if the battery status is below 50%
-if [[ "$battery_status" -lt 50 ]]; then
+if [[ "$battery_status" -lt 50 && "$battery_status" -gt 30 ]]; then
   # Check if the warning has already been issued
-  if [[ "$under_50" == false ]]; then
+  if [[ "$under" == false ]]; then
     # Send a warning message
     /usr/bin/notify-send --urgency=low " Battery" "Warning: Level is at $battery_status%."
 
     # Set the flag to true to indicate that the warning has been issued
-    under_50=true
+    under=true
   fi
-else
-  # Reset the flag to false if the battery level is above 50%
-  under_50=false
-fi
 
 # Check if the battery status is below 30%
-if [[ "$battery_status" -lt 30 ]]; then
+elif [[ "$battery_status" -lt 30 && "$battery_status" -gt 20 ]]; then
   # Check if the warning has already been issued
-  if [[ "$under_30" == false ]]; then
+  if [[ "$under" == false ]]; then
     # Send a warning message
     /usr/bin/notify-send --urgency=normal " Battery" "Warning: Level is at $battery_status%."
 
     # Set the flag to true to indicate that the warning has been issued
-    under_30=true
+    under=true
   fi
-else
-  # Reset the flag to false if the battery level is above 30%
-  under_30=false
-fi
 
 # Check if the battery status is below 20%
-if [[ "$battery_status" -lt 20 ]]; then
+elif [[ "$battery_status" -lt 20 ]]; then
   # Check if the warning has already been issued
-  if [[ "$under_20" == false ]]; then
+  if [[ "$under" == false ]]; then
     # Send a warning message
     /usr/bin/notify-send --urgency=critical " Battery" "Warning: Level is at $battery_status%."
 
     # Set the flag to true to indicate that the warning has been issued
-    under_20=true
+    under=true
   fi
 else
-  # Reset the flag to false if the battery level is above 20%
-  under_20=false
+  # Reset the flag to false if the battery level is above 50%
+  under=false
 fi
 
 # Check if the battery status is 100%
