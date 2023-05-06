@@ -1,0 +1,4 @@
+#!/bin/bash
+
+#Add blocking for tracking
+cat ~/.local/bin/privacy/block > /etc/hosts
