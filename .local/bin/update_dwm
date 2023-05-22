@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Define the paths to the default config file and the repository folder
+default_config="/home/mqx/.local/src/dwm/config.h"
+repository_folder="/home/mqx/workspace/dotfiles/.local/src/dwm"
+repository_config="$repository_folder/config.h"
+
+# Check if the config file already exists in the repository folder
+if [ -f "$repository_config" ]; then
+    # File exists, remove it
+    rm "$repository_config"
+fi
+
+# Copy the default config file to the repository folder
+cp "$default_config" "$repository_config"
+
+# Navigate to the repository folder
+cd "$repository_folder"
+
+# Commit the changes
+git add config.h
+git commit -m "Update config file"
+
+# Push the changes to GitHub
+git push origin master
