@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Find the input image using the wildcard pattern
+input_image=$(find . -maxdepth 1 -name "pic-selected*.png" -type f -print -quit)
+
+# Check if the image file was found
+if [[ -z "$input_image" ]]; then
+  echo "No image file found matching the pattern."
+  exit 1
+fi
+
+# Replace the extension of the input image file with the output text file
+output_text="${input_image%.*}"
+
+# Run Tesseract to extract text from the image
+tesseract "$input_image" "$output_text"
+
+# Copy the extracted text to the clipboard
+cat "${output_text}.txt" | /usr/bin/xclip -selection clipboard
+
+# Display a message indicating successful extraction and copying
+echo "Text extracted from $input_image and copied to clipboard."
+
+# Delete the input image and output text file
+rm "$input_image" "${output_text}.txt"
+
+# Display a message indicating successful deletion
+echo "Files $input_image and $output_text deleted."
