@@ -6,70 +6,41 @@ battery_status=$(cat $file)
 
 # Set up a flag to track whether or not the warning has been issued
 fully_charged=false
-under=false
-
-#bat_func() {
-#	# Check if the battery status is below 50%
-#	if [[ "$battery_status" -lt $1 ]]; then
-#	  # Check if the warning has already been issued
-#	  if [[ "$2" == false ]]; then
-#	    # Send a warning message
-#	    /usr/bin/notify-send --urgency=$3 "$4 Battery" "Warning: Level is at $battery_status%."
-#
-#	    # Set the flag to true to indicate that the warning has been issued
-#	    $2=true
-#	  fi
-#	else
-#	  # Reset the flag to false if the battery level is above 50%
-#	  $2=false
-#	fi
-#}
-#
-#bat_func 50 $under_50 low 
-#bat_func 30 $under_30 normal 
-#bat_func 20 $under_20 critical 
-
-
-
-# Check if the battery status is below 50%
-if [[ "$battery_status" -lt 50 && "$battery_status" -gt 30 ]]; then
-  # Check if the warning has already been issued
-  if [[ "$under" == false ]]; then
-    # Send a warning message
-    /usr/bin/notify-send --urgency=low " Battery" "Warning: Level is at $battery_status%."
-
-    # Set the flag to true to indicate that the warning has been issued
-    under=true
-  fi
+under_30=false
+under_20=false
 
 # Check if the battery status is below 30%
-elif [[ "$battery_status" -lt 30 && "$battery_status" -gt 20 ]]; then
+if [[ "$battery_status" -lt 30 && "$battery_status" -gt 20 ]]; then
   # Check if the warning has already been issued
-  if [[ "$under" == false ]]; then
+  if [[ "$under_30" == false ]]; then
     # Send a warning message
     /usr/bin/notify-send --urgency=normal " Battery" "Warning: Level is at $battery_status%."
 
     # Set the flag to true to indicate that the warning has been issued
-    under=true
+    under_30=true
   fi
+else
+  # Reset the flag to false if the battery level is above 30%
+  under_30=false
+fi
 
 # Check if the battery status is below 20%
-elif [[ "$battery_status" -lt 20 ]]; then
+if [[ "$battery_status" -lt 20 ]]; then
   # Check if the warning has already been issued
-  if [[ "$under" == false ]]; then
+  if [[ "$under_20" == false ]]; then
     # Send a warning message
     /usr/bin/notify-send --urgency=critical " Battery" "Warning: Level is at $battery_status%."
 
     # Set the flag to true to indicate that the warning has been issued
-    under=true
+    under_20=true
   fi
 else
-  # Reset the flag to false if the battery level is above 50%
-  under=false
+  # Reset the flag to false if the battery level is above 20%
+  under_20=false
 fi
 
 # Check if the battery status is 100%
-if [[ "$battery_status" -eq 100 ]]; then
+if [[ "$battery_status" -eq 80 ]]; then
   # Check if the warning has already been issued
   if [[ "$fully_charged" == false ]]; then
     # Send a warning message
