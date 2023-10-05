@@ -13,17 +13,14 @@ TZ=EEST
 ## Clean up the undo history if no changes has occurred in 90 days
 43 00 * * 3		find /home/mqx/.config/nvim/undodir -type f -mtime +90 -delete
 
-## Set DISPLAY for making the notifications work in later scripts
-@reboot			export DISPLAY=:0.0
-
 ## Activate light
 @reboot			/home/mqx/.local/bin/light_activation
 
-## Update packages
-@reboot			sh /home/mqx/.local/bin/battery_warning
+## Notify battery status
+@reboot			/usr/bin/sleep 7; export DISPLAY=:0.0; sh /home/mqx/.local/bin/battery_warning
 
 ## Activate ProtonVPN
-@reboot			/usr/bin/sleep 17; sh /home/mqx/.local/bin/pvpn
+@reboot			/usr/bin/sleep 17; export DISPLAY=:0.0; sh /home/mqx/.local/bin/pvpn
 
 ## Update packages
-@reboot			/usr/bin/sleep 56; sh /home/mqx/.local/bin/cron/checkup
+@reboot			/usr/bin/sleep 56; export DISPLAY=:0.0; sh /home/mqx/.local/bin/cron/checkup
