@@ -69,7 +69,7 @@ fi
 
 # Generate shortcuts from bookmarks
 if [ -x "$DOTFILES_DIR/generate-shortcuts.sh" ]; then
-    print_success "Generating bookmark shortcuts"
+    echo "Generating bookmark shortcuts"
     "$DOTFILES_DIR/generate-shortcuts.sh"
 fi
 
