@@ -1,6 +1,6 @@
 # Dotfiles
 
-Minimal dotfiles for Ubuntu servers. Managed via git + symlinks.
+Minimal dotfiles for Ubuntu servers. Optimized for development over SSH.
 
 ## Quick Install
 
@@ -12,36 +12,37 @@ cd ~/.dotfiles
 
 ## What's Included
 
-- `.zshrc` - Vi mode, starship prompt, fzf integration
-- `.aliases` - Universal aliases + distro-specific (auto-detected)
-- `init.vim` - Gruvbox, NERDTree, Git integration, FZF, ALE
-- `.gitconfig` - Delta pager, useful git aliases
-- `starship.toml` - Clean prompt config
+- **Zsh** - Vi mode, starship prompt, fzf, auto-detects distro
+- **Tmux** - Backtick prefix, vim navigation, session persistence
+- **Neovim** - Gruvbox theme, git integration, FZF, linting
+- **Git** - Delta pager, shortcuts (gs, ga, gc, etc.)
+- **Bookmarks** - Quick navigation (cf → ~/.config, sc → ~/.local/bin)
 
-## Dependencies
+## Key Features
 
-Installed via ansible playbook or manually:
-
-```bash
-sudo apt install zsh neovim git curl bat fzf ripgrep
-curl -sS https://starship.rs/install.sh | sh
-chsh -s $(which zsh)
-```
+- **Symlink-based** - Edit once, auto-tracked in git
+- **Distro-aware** - Debian (apt) and Arch (pacman) aliases
+- **Tmux ready** - Persistent sessions survive SSH disconnects
+- **Vi everywhere** - Consistent keybindings across zsh/tmux/vim
 
 ## Usage
 
-Edit configs in repo, push changes:
-
 ```bash
+# Update dotfiles
 cd ~/.dotfiles
 vim .aliases
 git add . && git commit -m "update" && git push
-```
 
-Pull on other machines to sync:
-
-```bash
+# Sync on other machines
 cd ~/.dotfiles && git pull
 ```
 
-Symlinks keep everything in sync automatically.
+## Tmux Quick Start
+
+```bash
+ts project        # New session
+` d               # Detach (backtick + d)
+ta project        # Re-attach
+```
+
+Symlinks keep everything in sync. No reinstall needed.
