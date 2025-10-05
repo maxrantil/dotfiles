@@ -1,0 +1,14 @@
+# File bookmarks for quick editing
+# Format: alias_name  path
+# Usage: Type 'cfa' to edit aliases, 'cfv' to edit nvim config
+
+# Dotfiles
+cfa  ${XDG_CONFIG_HOME:-$HOME/.config}/shell/aliasrc
+cfv  ${XDG_CONFIG_HOME:-$HOME/.config}/nvim/init.vim
+cfz  ${ZDOTDIR:-$HOME}/.zshrc
+cfp  ${ZDOTDIR:-$HOME}/.zprofile
+cfg  $HOME/.gitconfig
+
+# Bookmarks
+bf   ${XDG_CONFIG_HOME:-$HOME/.config}/shell/bm-files
+bd   ${XDG_CONFIG_HOME:-$HOME/.config}/shell/bm-dirs

@@ -1,0 +1,13 @@
+# Directory bookmarks for quick navigation
+# Format: alias_name  path
+# Usage: Type 'cf' to jump to ~/.config, 'sc' to jump to ~/.local/bin
+
+cf  ${XDG_CONFIG_HOME:-$HOME/.config}
+cac ${XDG_CACHE_HOME:-$HOME/.cache}
+dt  ${XDG_DATA_HOME:-$HOME/.local/share}
+lo  $HOME/.local
+sc  $HOME/.local/bin
+src $HOME/.local/src
+h   $HOME
+dow ${XDG_DOWNLOAD_DIR:-$HOME/Downloads}
+doc ${XDG_DOCUMENTS_DIR:-$HOME/Documents}

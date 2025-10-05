@@ -1,0 +1,77 @@
+#!/bin/sh
+# Common shell aliases for Ubuntu servers
+
+# Use neovim for vim if present
+[ -x "$(command -v nvim)" ] && alias vim="nvim" vimdiff="nvim -d"
+
+# Use bat for cat if available (better syntax highlighting)
+[ -x "$(command -v bat)" ] && alias c="bat" || alias c="cat"
+
+# sudo not required for common system commands
+for cmd in mount umount systemctl updatedb shutdown poweroff reboot docker; do
+    alias $cmd="sudo $cmd"
+done; unset cmd
+
+# Safer defaults
+alias cp="cp -iv"
+alias mv="mv -iv"
+alias rm="rm -vI"
+alias mkd="mkdir -pv"
+alias bc="bc -ql"
+
+# Colorize output
+alias ls="ls -hN --color=auto --group-directories-first"
+alias grep="grep --color=auto"
+alias diff="diff --color=auto"
+alias ip="ip -color=auto"
+
+# List variations
+alias ll="ls -lAFGh"
+alias la="ls -A"
+alias l="ls -AFGh"
+alias ..="cd .."
+alias ...="cd ../.."
+
+# Git shortcuts
+alias g="git"
+alias gs="git status --short --branch"
+alias ga="git add"
+alias gc="git commit"
+alias gp="git push"
+alias gl="git log --oneline --graph --decorate"
+
+# Utilities
+alias e="$EDITOR"
+alias v="$EDITOR"
+alias py="python3"
+alias d="docker"
+alias h="history"
+alias j="jobs -l"
+alias pk="pkill -9"
+alias sdn="shutdown -h now"
+alias ports="netstat -tulanp"
+alias psg="ps aux | grep -v grep | grep -i -e VSZ -e"
+
+# Tmux shortcuts
+alias t="tmux"
+alias ta="tmux attach -t"
+alias tad="tmux attach -d -t"
+alias ts="tmux new-session -s"
+alias tl="tmux list-sessions"
+alias tksv="tmux kill-server"
+alias tkss="tmux kill-session -t"
+
+# Functions
+
+# Fuzzy find and edit files
+ff() {
+    local file
+    file=$(find "${1:-.}" -type f | fzf --preview 'cat {}' --preview-window right:60%)
+    [ -n "$file" ] && $EDITOR "$file"
+}
+
+# Edit scripts in ~/.local/bin
+se() {
+    choice="$(find ~/.local/bin -mindepth 1 -printf '%P\n' 2>/dev/null | fzf)"
+    [ -f "$HOME/.local/bin/$choice" ] && $EDITOR "$HOME/.local/bin/$choice"
+}

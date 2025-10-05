@@ -1,0 +1,44 @@
+# Starship prompt configuration
+# Install: curl -sS https://starship.rs/install.sh | sh
+
+format = """
+[┌───────────────────>](bold green)
+[│](bold green)$directory$git_branch$git_status
+[└─>](bold green) """
+
+[directory]
+style = "blue bold"
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+
+[git_status]
+style = "red bold"
+conflicted = "⚔️ "
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "🤷 "
+stashed = "📦"
+modified = "📝"
+staged = '[++\($count\)](green)'
+renamed = "👅"
+deleted = "🗑"
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"
+
+[nodejs]
+disabled = true
+
+[python]
+disabled = false
+symbol = "🐍 "
+
+[rust]
+disabled = false
+symbol = "🦀 "

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Debian/Ubuntu-specific aliases
+
+# APT package manager shortcuts
+alias aptup="sudo apt update && sudo apt upgrade -y"
+alias aptin="sudo apt install"
+alias aptrm="sudo apt remove"
+alias apts="apt search"

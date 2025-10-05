@@ -1,0 +1,16 @@
+#!/bin/sh
+# Arch/Artix-specific aliases
+# Source this file after main .aliases on Arch-based systems
+
+# Package manager aliases for Arch/Artix
+for cmd in sv pacman updatedb; do
+    alias $cmd="sudo $cmd"
+done; unset cmd
+
+alias p="pacman"
+alias xi="sudo xbps-install"
+alias xr="sudo xbps-remove -R"
+alias xq="xbps-query"
+
+# Artix-specific (runit)
+alias reconnect="sv restart NetworkManager"

@@ -1,0 +1,103 @@
+[user]
+	name = Max Rantil
+	email = rantil@pm.me
+	# signingkey = EDE1D98A8D461DAA7DA5B5BB2C1279AF842D79DF  # Uncomment if using GPG signing
+
+[alias]
+	aa = add --all
+	amend = commit --amend --no-edit
+	br = branch
+	ca = commit --amend
+	ch = checkout
+	cleanup = !git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d
+	co = commit -v
+	cpn = cherry-pick -n
+	d = diff
+	fe = fetch
+	g = grep -n
+	# gpg = !~/.local/bin/git/git-gpg-tty-wrapper  # Uncomment if using custom GPG wrapper
+	last = log -1 HEAD
+	lo = log --pretty=format:'%C(auto)%h %Cgreen(%cr)%Creset %s %C(bold blue)<%an>%Creset' --graph --abbrev-commit --decorate --color
+	pf = push --force-with-lease
+	plr = pull --rebase
+	pushu = "!f() { git push --set-upstream origin $(git symbolic-ref --short HEAD); }; f"
+	rb = rebase -i
+	rc = rebase --continue
+	st = status --short --branch
+	stash = stash -u
+	stashp = stash pop
+	stashshow = stash show -p
+	uncommit = reset --soft HEAD~1
+	wd = diff --word-diff
+
+[core]
+	editor = nvim
+	pager = delta
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+	line-numbers = true
+	side-by-side = true
+	syntax-theme = gruvbox-dark
+
+[color]
+	ui = true
+
+[color "status"]
+	added = green
+	changed = yellow
+	untracked = cyan
+	deleted = red
+
+[color "diff"]
+	meta = 11
+	frag = magenta bold
+	old = red bold
+	new = green bold
+	func = 146 bold
+	commit = yellow bold
+	whitespace = red reverse
+
+[color "branch"]
+	current = yellow reverse
+	local = green
+	remote = red
+
+[color "tag"]
+	tag = yellow
+	commit = green
+
+[color "show"]
+	commit = yellow
+	diff = magenta
+	author = green
+	subject = white bold
+[color "diff-highlight"]
+	oldNormal = red bold
+	oldHighlight = red bold 52
+	newNormal = green bold
+	newHighlight = green bold 22
+[init]
+	defaultBranch = master
+[commit]
+	gpgsign = false
+[merge "ours"]
+	driver = true
+# GitHub CLI authentication (if using 'gh')
+[credential "https://github.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential
+
+# Fetch all GitHub PRs (useful for reviewing)
+[remote "origin"]
+	fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
+
+# Use SSH instead of HTTPS:
+[url "git@github.com:"]
+	insteadOf = https://github.com/
