@@ -34,7 +34,12 @@ stty stop undef
 autoload -U compinit
 zstyle ':completion:*' menu select
 zmodload zsh/complist
-compinit
+# Only rebuild cache once per day
+if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
+    compinit
+else
+    compinit -C  # Skip security check
+fi
 _comp_options+=(globdots)      # Include hidden files in completions
 
 # Vi mode
