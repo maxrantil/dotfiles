@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# ABOUTME: Symlink-based dotfiles installer with automatic backup and XDG compliance
 # Simple dotfiles installer - creates symlinks from home to repo
 
 set -e

@@ -1,4 +1,5 @@
 #!/bin/zsh
+# ABOUTME: Interactive shell configuration with vi-mode, FZF integration, and compinit caching
 # .zshrc - Interactive shell configuration
 # Runs for every shell session
 

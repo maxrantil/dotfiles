@@ -1,3 +1,4 @@
+# ABOUTME: Git configuration with delta pager, sensible defaults, and local overrides support
 [user]
 	name = Max Rantil
 	email = rantil@pm.me

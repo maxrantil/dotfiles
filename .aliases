@@ -1,4 +1,4 @@
-#!/bin/sh
+# ABOUTME: Universal shell aliases with modern tool alternatives and bookmark shortcuts
 # Common shell aliases for Ubuntu servers
 
 # Use neovim for vim if present
