@@ -2,9 +2,6 @@
 # .zprofile - Runs once at login
 # Environment variables and PATH configuration
 
-# Source .zshrc for interactive login shells (like SSH sessions)
-[[ -f ~/.zshrc ]] && source ~/.zshrc
-
 # Add ~/.local/bin to PATH (including subdirectories)
 export PATH="$PATH:$HOME/.local/bin"
 
