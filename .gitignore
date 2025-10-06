@@ -12,3 +12,10 @@ autoload/
 
 # Local notes/guides (don't push to repo)
 TMUX_QUICKSTART.md
+
+# Development workflow files (keep local)
+CLAUDE.md
+AGENT_FEEDBACK.md
+AGENT_REVIEW.md
+SESSION_HANDOVER.md
+docs/implementation/
