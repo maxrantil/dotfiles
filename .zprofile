@@ -1,4 +1,4 @@
-#!/bin/zsh
+# ABOUTME: Login shell configuration with XDG Base Directory and PATH setup
 # .zprofile - Runs once at login
 # Environment variables and PATH configuration
 
