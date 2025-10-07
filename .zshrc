@@ -163,10 +163,20 @@ elif [ -f ~/.fzf.zsh ]; then
     safe_source ~/.fzf.zsh
 fi
 
-# NVM (Node Version Manager) support
+# NVM (Node Version Manager) lazy loading
 export NVM_DIR="$HOME/.config/nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    # Create stub functions that load NVM on first use
+    nvm() {
+        unset -f nvm node npm npx
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+        nvm "$@"
+    }
+    node() { nvm >/dev/null 2>&1; command node "$@"; }
+    npm() { nvm >/dev/null 2>&1; command npm "$@"; }
+    npx() { nvm >/dev/null 2>&1; command npx "$@"; }
+fi
 
 # Load universal aliases
 [ -f ~/.aliases ] && safe_source ~/.aliases
