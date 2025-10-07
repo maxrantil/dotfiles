@@ -3,6 +3,79 @@
 # .zshrc - Interactive shell configuration
 # Runs for every shell session
 
+# Safe source function - verify ownership and permissions before sourcing files
+# Protects against sourcing files with insecure ownership/permissions
+# Note: Small TOCTOU window exists between checks and sourcing (microseconds)
+safe_source() {
+    local file="$1"
+    local owner perms parent_dir parent_owner realfile
+
+    # Normalize path to absolute
+    [[ "$file" =~ ^/ ]] || file="$PWD/$file"
+
+    # Reject shell metacharacters in path
+    [[ ! "$file" =~ [\;\|\&\$\`] ]] || return 1
+
+    # Verify file exists and is regular file (not device, socket, etc.)
+    [[ -f "$file" ]] || return 1
+    [[ ! -c "$file" && ! -b "$file" && ! -p "$file" && ! -S "$file" ]] || return 1
+
+    # Resolve symlinks to actual file
+    if [[ -L "$file" ]]; then
+        realfile=$(readlink -f "$file" 2>/dev/null)
+        [[ -n "$realfile" && -f "$realfile" ]] || return 1
+        file="$realfile"
+    fi
+
+    # Validate stat is available (fail closed)
+    if ! command -v stat >/dev/null 2>&1; then
+        echo "Warning: Cannot validate $file security (stat unavailable)" >&2
+        return 1
+    fi
+
+    # Get file metadata
+    owner=$(stat -c '%U' "$file" 2>/dev/null || \
+            stat -f '%Su' "$file" 2>/dev/null)
+    perms=$(stat -c '%a' "$file" 2>/dev/null || \
+            stat -f '%Lp' "$file" 2>/dev/null)
+
+    # Validate stat output format
+    if [[ ! "$owner" =~ ^[a-zA-Z0-9_-]+$ ]] || [[ ! "$perms" =~ ^[0-7]{3,4}$ ]]; then
+        echo "Warning: Invalid stat output for $file" >&2
+        return 1
+    fi
+
+    # Validate USER environment variable
+    local actual_user=$(id -un)
+    [[ "$USER" == "$actual_user" ]] || USER="$actual_user"
+
+    # Check file ownership
+    if [[ "$owner" != "$USER" ]]; then
+        echo "Warning: $file not owned by $USER (owner: $owner)" >&2
+        return 1
+    fi
+
+    # Check parent directory ownership
+    parent_dir=$(dirname "$file")
+    parent_owner=$(stat -c '%U' "$parent_dir" 2>/dev/null || \
+                   stat -f '%Su' "$parent_dir" 2>/dev/null)
+
+    if [[ "$parent_owner" != "$USER" ]] && [[ "$parent_owner" != "root" ]]; then
+        echo "Warning: Parent directory of $file not owned by $USER or root" >&2
+        return 1
+    fi
+
+    # Check permissions (reject world/group writable, setuid/setgid)
+    if [[ "$perms" =~ [2367]$ ]] || (( 10#$perms > 644 )); then
+        echo "Warning: $file has insecure permissions ($perms)" >&2
+        return 1
+    fi
+
+    # Source the file (small TOCTOU window here, but acceptable for dotfiles)
+    source "$file"
+    return $?
+}
+
 # Enable colors
 autoload -U colors && colors
 
@@ -84,10 +157,10 @@ bindkey -M vicmd '^e' edit-command-line
 
 # FZF integration (if installed)
 if [ -f /usr/share/fzf/key-bindings.zsh ]; then
-    source /usr/share/fzf/key-bindings.zsh
-    source /usr/share/fzf/completion.zsh
+    safe_source /usr/share/fzf/key-bindings.zsh
+    safe_source /usr/share/fzf/completion.zsh
 elif [ -f ~/.fzf.zsh ]; then
-    source ~/.fzf.zsh
+    safe_source ~/.fzf.zsh
 fi
 
 # NVM (Node Version Manager) support
@@ -96,30 +169,30 @@ export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 # Load universal aliases
-[ -f ~/.aliases ] && source ~/.aliases
+[ -f ~/.aliases ] && safe_source ~/.aliases
 
 # Load bookmark shortcuts (cf, sc, etc.)
-[ -f ~/.config/shell/shortcutrc ] && source ~/.config/shell/shortcutrc
+[ -f ~/.config/shell/shortcutrc ] && safe_source ~/.config/shell/shortcutrc
 
 # Load distro-specific aliases
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     case "$ID" in
         ubuntu|debian|pop)
-            [ -f ~/.dotfiles/distro/debian/.aliases_debian ] && source ~/.dotfiles/distro/debian/.aliases_debian
+            [ -f ~/.dotfiles/distro/debian/.aliases_debian ] && safe_source ~/.dotfiles/distro/debian/.aliases_debian
             ;;
         arch|artix|manjaro)
-            [ -f ~/.dotfiles/distro/arch/.aliases_arch ] && source ~/.dotfiles/distro/arch/.aliases_arch
+            [ -f ~/.dotfiles/distro/arch/.aliases_arch ] && safe_source ~/.dotfiles/distro/arch/.aliases_arch
             ;;
     esac
 fi
 
 # Syntax highlighting (if installed via apt)
 if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    safe_source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
 
 # Auto-suggestions (if installed via apt)
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    safe_source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
