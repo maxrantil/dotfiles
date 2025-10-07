@@ -81,7 +81,13 @@ autoload -U colors && colors
 
 # Use Starship prompt if available, otherwise fall back to custom prompt
 if command -v starship > /dev/null 2>&1; then
-    eval "$(starship init zsh)"
+    # Cache starship init to avoid subprocess on every startup
+    STARSHIP_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/starship/init.zsh"
+    if [[ ! -f "$STARSHIP_CACHE" ]] || [[ $(command -v starship) -nt "$STARSHIP_CACHE" ]]; then
+        mkdir -p "$(dirname "$STARSHIP_CACHE")"
+        starship init zsh > "$STARSHIP_CACHE"
+    fi
+    source "$STARSHIP_CACHE"
 else
     PS1="%B%{$fg[red]%}[%{$fg[yellow]%}%n%{$fg[green]%}@%{$fg[blue]%}%M %{$fg[magenta]%}%~%{$fg[red]%}]%{$reset_color%}$%b "
 fi
