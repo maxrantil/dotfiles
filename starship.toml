@@ -17,16 +17,28 @@ style = "bold purple"
 
 [git_status]
 style = "red bold"
-conflicted = "⚔️ "
-ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-untracked = "🤷 "
-stashed = "📦"
-modified = "📝"
-staged = '[++\($count\)](green)'
-renamed = "👅"
-deleted = "🗑"
+# Accessible text-based indicators (emojis preserved as comments below)
+conflicted = "[CONFLICT] "
+ahead = "[↑${count}]"
+behind = "[↓${count}]"
+diverged = "[↕ ↑${ahead_count} ↓${behind_count}]"
+untracked = "[?${count}]"
+stashed = "[STASH] "
+modified = "[M${count}]"
+staged = '[+${count}](green)'
+renamed = "[R] "
+deleted = "[-${count}]"
+# Original emoji versions (uncomment to restore):
+# conflicted = "⚔️ "
+# ahead = "⇡${count}"
+# behind = "⇣${count}"
+# diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+# untracked = "🤷 "
+# stashed = "📦"
+# modified = "📝"
+# staged = '[++\($count\)](green)'
+# renamed = "👅"
+# deleted = "🗑"
 
 [character]
 success_symbol = "[➜](bold green)"
@@ -37,8 +49,10 @@ disabled = true
 
 [python]
 disabled = false
-symbol = "🐍 "
+symbol = "PY "
+# symbol = "🐍 "
 
 [rust]
 disabled = false
-symbol = "🦀 "
+symbol = "RS "
+# symbol = "🦀 "
