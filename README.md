@@ -25,6 +25,33 @@ cd ~/.dotfiles
 - **Tmux ready** - Persistent sessions survive SSH disconnects
 - **Vi everywhere** - Consistent keybindings across zsh/tmux/vim
 
+## Development & Testing
+
+### Quick Testing (30 seconds)
+
+```bash
+# Run automated tests
+./tests/docker-test.sh
+
+# Interactive shell for debugging
+./tests/docker-test.sh --interactive
+```
+
+**Tests include:**
+- Shell startup verification
+- Starship caching validation
+- Dotfiles symlink creation
+- Performance measurements
+
+### Full Integration Testing
+
+For comprehensive VM-based testing, see the [vm-infra repository](https://github.com/maxrantil/vm-infra).
+
+```bash
+# Test with local dotfiles (from vm-infra repo)
+./provision-vm.sh test-vm --test-dotfiles ../dotfiles
+```
+
 ## Usage
 
 ```bash
