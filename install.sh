@@ -31,7 +31,7 @@ link_file() {
 
     # Create symlink
     ln -sf "$source" "$target"
-    echo "✓ Linked $(basename "$target")"
+    echo "[SUCCESS] Linked $(basename "$target")"
 }
 
 # Link dotfiles
@@ -75,7 +75,7 @@ fi
 
 echo ""
 echo "=================================="
-echo "✓ Installation complete!"
+echo "[SUCCESS] Installation complete!"
 echo "=================================="
 
 [ -d "$BACKUP_DIR" ] && echo "Backups saved to: $BACKUP_DIR"
