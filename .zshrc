@@ -191,9 +191,17 @@ fi
 [ -f ~/.config/shell/shortcutrc ] && safe_source ~/.config/shell/shortcutrc
 
 # Load distro-specific aliases
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    case "$ID" in
+if [[ ! -f "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro" ]]; then
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+        echo "$ID" > "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro"
+    fi
+fi
+
+if [ -f "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro" ]; then
+    DISTRO=$(cat "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro")
+    case "$DISTRO" in
         ubuntu|debian|pop)
             [ -f ~/.dotfiles/distro/debian/.aliases_debian ] && safe_source ~/.dotfiles/distro/debian/.aliases_debian
             ;;
