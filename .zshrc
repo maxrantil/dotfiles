@@ -220,3 +220,25 @@ fi
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     safe_source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
+
+# Display keyboard shortcuts help
+keybindings_help() {
+    cat << 'EOF'
+ZSH KEYBOARD SHORTCUTS:
+  Ctrl+R    - Search backward through history
+  Ctrl+S    - Search forward through history
+  Ctrl+A    - Jump to beginning of line
+  Ctrl+E    - Jump to end of line
+  Ctrl+E    - Edit command in vim (normal mode)
+  Delete    - Delete character under cursor
+
+VI MODE INDICATORS:
+  Beam cursor    - Insert mode
+  Block cursor   - Normal mode
+
+Tab Completion:
+  h/j/k/l   - Navigate completion menu (vim-style)
+EOF
+}
+alias help='keybindings_help'
+alias keys='keybindings_help'
