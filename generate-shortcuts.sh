@@ -73,4 +73,4 @@ if [ -f "$DOTFILES_DIR/bm-files" ]; then
     done < "$DOTFILES_DIR/bm-files"
 fi
 
-echo "✓ Generated shortcuts at $OUTPUT"
+echo "[SUCCESS] Generated shortcuts at $OUTPUT"
