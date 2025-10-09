@@ -14,6 +14,37 @@ echo ""
 echo "Installing from: $DOTFILES_DIR"
 echo ""
 
+# Prerequisite checks
+echo "Checking prerequisites..."
+
+# Check write permissions
+if [ ! -w "$HOME" ]; then
+    echo "[ERROR] No write permission to home directory: $HOME" >&2
+    exit 1
+fi
+
+# Check required commands
+for cmd in ln mkdir mv rm; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "[ERROR] Required command not found: $cmd" >&2
+        exit 1
+    fi
+done
+
+# Create required directories
+for dir in "$HOME/.config" "$HOME/.config/shell" "$HOME/.config/nvim" "$HOME/.cache/zsh"; do
+    if [ ! -d "$dir" ]; then
+        mkdir -p "$dir" || {
+            echo "[ERROR] Failed to create directory: $dir" >&2
+            exit 1
+        }
+        echo "[CREATE] Directory: $dir"
+    fi
+done
+
+echo "[OK] Prerequisites verified"
+echo ""
+
 # Backup and link function
 link_file() {
     local source="$1"
@@ -41,13 +72,11 @@ link_file "$DOTFILES_DIR/.aliases" "$HOME/.aliases"
 
 # Link inputrc for readline (bash, python REPL, etc.)
 if [ -f "$DOTFILES_DIR/inputrc" ]; then
-    mkdir -p "$HOME/.config/shell"
     link_file "$DOTFILES_DIR/inputrc" "$HOME/.config/shell/inputrc"
 fi
 
 # Link neovim config
 if [ -f "$DOTFILES_DIR/init.vim" ]; then
-    mkdir -p "$HOME/.config/nvim"
     link_file "$DOTFILES_DIR/init.vim" "$HOME/.config/nvim/init.vim"
 fi
 
@@ -63,7 +92,6 @@ fi
 
 # Link starship config
 if [ -f "$DOTFILES_DIR/starship.toml" ]; then
-    mkdir -p "$HOME/.config"
     link_file "$DOTFILES_DIR/starship.toml" "$HOME/.config/starship.toml"
 fi
 
