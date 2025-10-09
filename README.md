@@ -97,3 +97,4 @@ Having issues? See the [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions
 # Test change to trigger workflows
 # Trigger workflow test
 # Test AI attribution detection
+# Test invalid PR title
