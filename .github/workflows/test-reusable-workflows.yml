@@ -13,7 +13,7 @@ jobs:
   # Test 1: Block AI Attribution
   block-ai-attribution:
     name: Block AI Attribution
-    uses: maxrantil/.github/workflows/block-ai-attribution-reusable.yml@master
+    uses: maxrantil/.github/.github/workflows/block-ai-attribution-reusable.yml@master
     with:
       base-branch: 'master'
 
@@ -21,7 +21,7 @@ jobs:
   pr-title-check:
     name: PR Title Check
     if: github.event_name == 'pull_request'
-    uses: maxrantil/.github/workflows/pr-title-check-reusable.yml@master
+    uses: maxrantil/.github/.github/workflows/pr-title-check-reusable.yml@master
     with:
       allowed-types: 'feat,fix,docs,style,refactor,test,chore,perf,ci,build,revert'
 
@@ -29,7 +29,7 @@ jobs:
   protect-master:
     name: Protect Master Branch
     if: github.event_name == 'push'
-    uses: maxrantil/.github/workflows/protect-master-reusable.yml@master
+    uses: maxrantil/.github/.github/workflows/protect-master-reusable.yml@master
     with:
       protected-branch: 'master'
 
