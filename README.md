@@ -10,6 +10,23 @@ cd ~/.dotfiles
 ./install.sh
 ```
 
+## Post-Install Setup
+
+### Git User Configuration
+
+The dotfiles include a shared `.gitconfig` but require you to set your personal information:
+
+```bash
+# Copy the example template
+cp ~/.dotfiles/.gitconfig.local.example ~/.gitconfig.local
+
+# Edit with your information
+vim ~/.gitconfig.local
+# Set: name, email, and optionally GPG signingkey
+```
+
+This keeps your personal information private and out of the tracked repository.
+
 ## What's Included
 
 - **Zsh** - Vi mode, starship prompt, fzf, auto-detects distro

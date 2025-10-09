@@ -7,6 +7,9 @@ autoload/
 *.backup
 *~
 
+# User-specific git configuration
+.gitconfig.local
+
 # OS files
 .DS_Store
 

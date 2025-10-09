@@ -1,0 +1,14 @@
+# ABOUTME: Template for user-specific git configuration (copy to .gitconfig.local)
+# This file contains user-specific settings that should not be tracked in git
+# Copy this file to ~/.gitconfig.local and customize with your personal information
+
+[user]
+	name = YOUR_NAME
+	email = YOUR_EMAIL
+	# Uncomment and set your GPG key ID if you want to sign commits:
+	# signingkey = YOUR_GPG_KEY_ID
+
+# Optional: Override any settings from the main .gitconfig
+# Example:
+# [core]
+# 	editor = vim
