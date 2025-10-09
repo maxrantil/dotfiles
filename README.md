@@ -95,3 +95,4 @@ Symlinks keep everything in sync. No reinstall needed.
 
 Having issues? See the [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common problems.
 # Test change to trigger workflows
+# Trigger workflow test
