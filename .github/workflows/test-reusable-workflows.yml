@@ -1,0 +1,37 @@
+# ABOUTME: Test workflow for validating centralized reusable workflows from maxrantil/.github
+name: Test Reusable Workflows
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  # Test 1: Block AI Attribution
+  block-ai-attribution:
+    name: Block AI Attribution
+    uses: maxrantil/.github/.github/workflows/block-ai-attribution-reusable.yml@feat/add-4-pr-commit-workflows
+    with:
+      base-branch: 'master'
+
+  # Test 2: PR Title Check (only runs on pull_request events)
+  pr-title-check:
+    name: PR Title Check
+    if: github.event_name == 'pull_request'
+    uses: maxrantil/.github/.github/workflows/pr-title-check-reusable.yml@feat/add-4-pr-commit-workflows
+    with:
+      allowed-types: 'feat,fix,docs,style,refactor,test,chore,perf,ci,build,revert'
+
+  # Test 3: Protect Master (only runs on push events)
+  protect-master:
+    name: Protect Master Branch
+    if: github.event_name == 'push'
+    uses: maxrantil/.github/.github/workflows/protect-master-reusable.yml@feat/add-4-pr-commit-workflows
+    with:
+      protected-branch: 'master'
+
+  # Note: pre-commit-check requires .pre-commit-config.yaml which dotfiles may not have
+  # Skipping for now - will test separately in repos that use pre-commit
