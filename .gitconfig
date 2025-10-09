@@ -1,8 +1,9 @@
 # ABOUTME: Git configuration with delta pager, sensible defaults, and local overrides support
-[user]
-	name = Max Rantil
-	email = rantil@pm.me
-	# signingkey = EDE1D98A8D461DAA7DA5B5BB2C1279AF842D79DF  # Uncomment if using GPG signing
+
+# Include user-specific config (not tracked in git)
+# Copy .gitconfig.local.example to ~/.gitconfig.local and customize with your info
+[include]
+	path = ~/.gitconfig.local
 
 [alias]
 	aa = add --all
