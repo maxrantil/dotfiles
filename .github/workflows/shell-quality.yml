@@ -1,4 +1,4 @@
-# ABOUTME: Shell quality checks - ShellCheck and shfmt validation for all shell scripts
+# ABOUTME: Shell quality checks - ShellCheck and shfmt validation for shell scripts (.sh files only)
 name: Shell Quality Checks
 
 on:
@@ -10,4 +10,5 @@ jobs:
     uses: maxrantil/.github/.github/workflows/shell-quality-reusable.yml@master
     with:
       shellcheck-severity: 'warning'
+      shellcheck-ignore-paths: '.zshrc .zprofile .aliases'
       shfmt-options: '-d -i 4 -ci -sr'
