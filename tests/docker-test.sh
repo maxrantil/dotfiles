@@ -54,7 +54,7 @@ CACHE_TEST=$(docker run --rm "$IMAGE_NAME" zsh -i -c '
     else
         echo "CACHE_MISSING"
     fi
-' 2>/dev/null)
+' 2> /dev/null)
 
 if [[ "$CACHE_TEST" =~ "CACHE_EXISTS" ]]; then
     echo -e "${GREEN}✓ Starship cache created successfully${NC}"
@@ -77,7 +77,7 @@ SYMLINK_TEST=$(docker run --rm "$IMAGE_NAME" zsh -c '
     else
         echo "SYMLINKS_MISSING"
     fi
-' 2>/dev/null)
+' 2> /dev/null)
 
 if [[ "$SYMLINK_TEST" =~ "SYMLINKS_OK" ]]; then
     echo -e "${GREEN}✓ Dotfiles symlinks created${NC}"

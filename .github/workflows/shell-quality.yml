@@ -1,0 +1,35 @@
+# ABOUTME: Shell quality checks for .sh scripts only (excludes zsh config files)
+name: Shell Quality Checks
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ShellCheck on .sh files only
+        run: |
+          echo "Running ShellCheck on .sh files..."
+          find . -name "*.sh" -type f -print0 | xargs -0 shellcheck -S warning
+
+  shfmt:
+    name: Shell Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shfmt
+        run: |
+          wget -O shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
+          chmod +x shfmt
+          sudo mv shfmt /usr/local/bin/
+
+      - name: Check formatting on .sh files only
+        run: |
+          echo "Running shfmt on .sh files..."
+          find . -name "*.sh" -type f -print0 | xargs -0 shfmt -d -i 4 -ci -sr

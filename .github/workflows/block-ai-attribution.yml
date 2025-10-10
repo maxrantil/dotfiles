@@ -1,0 +1,14 @@
+# ABOUTME: Block AI/agent attribution in commit messages per CLAUDE.md policy
+name: Block AI Attribution
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  check-attribution:
+    uses: maxrantil/.github/.github/workflows/block-ai-attribution-reusable.yml@master
+    with:
+      base-branch: 'master'
+      block-ai-tools: true
+      block-agent-mentions: true
