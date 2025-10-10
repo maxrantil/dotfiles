@@ -1,0 +1,5 @@
+This file has trailing whitespace.   
+This line also has trailing spaces.  
+And this one too.    
+
+This is intentional to test pre-commit hook detection in CI.   
