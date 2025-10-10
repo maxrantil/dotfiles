@@ -1,0 +1,13 @@
+# ABOUTME: Shell quality checks - ShellCheck and shfmt validation for all shell scripts
+name: Shell Quality Checks
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  shellcheck:
+    uses: maxrantil/.github/.github/workflows/shell-quality-reusable.yml@master
+    with:
+      shellcheck-severity: 'warning'
+      shfmt-options: '-d -i 4 -ci -sr'

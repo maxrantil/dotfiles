@@ -1,0 +1,14 @@
+# ABOUTME: Pre-commit hooks validation in CI to catch bypassed hooks
+name: Pre-commit Check
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  run-pre-commit:
+    uses: maxrantil/.github/.github/workflows/pre-commit-check-reusable.yml@master
+    with:
+      python-version: '3.x'
+      base-branch: 'master'
+      run-on-all-files: false
