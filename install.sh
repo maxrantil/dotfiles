@@ -25,7 +25,7 @@ fi
 
 # Check required commands
 for cmd in ln mkdir mv rm; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
+    if ! command -v "$cmd" > /dev/null 2>&1; then
         echo "[ERROR] Required command not found: $cmd" >&2
         exit 1
     fi
