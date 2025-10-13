@@ -67,8 +67,7 @@ link_file() {
 
 # Link dotfiles
 link_file "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
-# TEST: Intentionally break .zshrc linking to verify CI catches it
-# link_file "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
+link_file "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 link_file "$DOTFILES_DIR/.aliases" "$HOME/.aliases"
 
 # Link inputrc for readline (bash, python REPL, etc.)
