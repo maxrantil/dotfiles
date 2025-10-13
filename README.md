@@ -76,6 +76,36 @@ For comprehensive VM-based testing, see the [vm-infra repository](https://github
 ./provision-vm.sh test-vm --test-dotfiles ../dotfiles
 ```
 
+### Maintaining CI Tests
+
+When modifying `install.sh`:
+
+**Adding critical symlinks** (required for shell function):
+1. Add symlink creation to `install.sh`
+2. Update `.github/workflows/shell-quality.yml` verification step
+3. Document why it's critical in workflow comments
+
+**Adding optional symlinks** (enhancements):
+1. Add symlink creation to `install.sh`
+2. No CI update needed (tested in VM tier)
+3. Document as optional in workflow comments
+
+**Critical vs Optional:**
+- **Critical**: Shell won't function without it (.zshrc, .aliases, nvim, tmux, starship)
+- **Optional**: Nice-to-have enhancements (.gitconfig, .zprofile, inputrc, shortcuts)
+
+### Troubleshooting Installation Test Failures
+
+**CI Error: "ERROR: .zshrc not linked"**
+- **Cause**: install.sh failed to create expected symlink
+- **Debug**: Run `bash install.sh` in clean test directory
+- **Check**: Verify source file exists in repository
+
+**CI Error: "ERROR: Found broken symlinks"**
+- **Cause**: Symlink points to non-existent file
+- **Debug**: Check if target file was renamed/removed in recent commits
+- **Fix**: Update install.sh symlink path or restore missing file
+
 ## Usage
 
 ```bash

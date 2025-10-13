@@ -58,6 +58,24 @@ jobs:
 
       - name: Verify key symlinks created
         run: |
+          # CRITICAL SYMLINKS TESTED IN CI:
+          # These are essential for basic shell functionality:
+          # - .zshrc: Shell initialization (required for zsh to function)
+          # - .aliases: Core command shortcuts (workflow dependency)
+          # - nvim/init.vim: Editor configuration (development dependency)
+          # - .tmux.conf: Session management (SSH workflow requirement)
+          # - starship.toml: Prompt configuration (startup validation)
+          #
+          # OPTIONAL SYMLINKS (tested in VM tier, not CI):
+          # - .gitconfig: User-specific, conditional linking
+          # - .zprofile: Runtime sourcing, tested via VM
+          # - inputrc: Readline enhancement, non-critical
+          # - Generated shortcuts: Runtime-created, functionally tested in VM
+          #
+          # MAINTENANCE: When adding new critical symlinks to install.sh,
+          # update the test cases below to verify them.
+          # Last updated: 2025-10-13 (5 critical symlinks)
+
           # Check critical symlinks exist
           test -L "$TEMP_HOME/.zshrc" || (echo "ERROR: .zshrc not linked" && exit 1)
           test -L "$TEMP_HOME/.aliases" || (echo "ERROR: .aliases not linked" && exit 1)
