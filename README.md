@@ -44,6 +44,13 @@ This keeps your personal information private and out of the tracked repository.
 
 ## Development & Testing
 
+### Automated CI Testing
+
+Every pull request automatically runs:
+- **ShellCheck** - Linting for shell scripts
+- **shfmt** - Shell formatting validation
+- **Installation Test** - Verifies install.sh creates all required symlinks (~30 seconds)
+
 ### Quick Testing (30 seconds)
 
 ```bash
