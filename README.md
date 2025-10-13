@@ -131,3 +131,7 @@ Symlinks keep everything in sync. No reinstall needed.
 ## Troubleshooting
 
 Having issues? See the [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common problems.
+
+---
+
+_Last updated: 2025-10-13_
