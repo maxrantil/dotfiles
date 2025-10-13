@@ -1,0 +1,13 @@
+# ABOUTME: Session handoff verification - ensures session handoff documentation is updated
+
+name: Session Handoff Check
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  verify-session-handoff:
+    uses: maxrantil/.github/.github/workflows/session-handoff-check-reusable.yml@master
+    with:
+      base-branch: 'master'
