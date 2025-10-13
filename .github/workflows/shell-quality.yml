@@ -33,3 +33,63 @@ jobs:
         run: |
           echo "Running shfmt on .sh files..."
           find . -name "*.sh" -type f -print0 | xargs -0 shfmt -d -i 4 -ci -sr
+
+  installation-test:
+    name: Test Installation Script
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create temporary home directory
+        run: |
+          TEMP_HOME=$(mktemp -d)
+          echo "TEMP_HOME=$TEMP_HOME" >> $GITHUB_ENV
+
+      - name: Run install.sh in test home
+        run: |
+          export HOME=$TEMP_HOME
+          bash install.sh
+        env:
+          CI: true
+
+      - name: Verify key symlinks created
+        run: |
+          # CRITICAL SYMLINKS TESTED IN CI:
+          # These are essential for basic shell functionality:
+          # - .zshrc: Shell initialization (required for zsh to function)
+          # - .aliases: Core command shortcuts (workflow dependency)
+          # - nvim/init.vim: Editor configuration (development dependency)
+          # - .tmux.conf: Session management (SSH workflow requirement)
+          # - starship.toml: Prompt configuration (startup validation)
+          #
+          # OPTIONAL SYMLINKS (tested in VM tier, not CI):
+          # - .gitconfig: User-specific, conditional linking
+          # - .zprofile: Runtime sourcing, tested via VM
+          # - inputrc: Readline enhancement, non-critical
+          # - Generated shortcuts: Runtime-created, functionally tested in VM
+          #
+          # MAINTENANCE: When adding new critical symlinks to install.sh,
+          # update the test cases below to verify them.
+          # Last updated: 2025-10-13 (5 critical symlinks)
+
+          # Check critical symlinks exist
+          test -L "$TEMP_HOME/.zshrc" || (echo "ERROR: .zshrc not linked" && exit 1)
+          test -L "$TEMP_HOME/.aliases" || (echo "ERROR: .aliases not linked" && exit 1)
+          test -L "$TEMP_HOME/.config/nvim/init.vim" || (echo "ERROR: nvim config not linked" && exit 1)
+          test -L "$TEMP_HOME/.tmux.conf" || (echo "ERROR: tmux config not linked" && exit 1)
+          test -L "$TEMP_HOME/.config/starship.toml" || (echo "ERROR: starship config not linked" && exit 1)
+
+      - name: Check for broken symlinks
+        run: |
+          # Find and report broken symlinks
+          cd $TEMP_HOME
+          if find . -type l ! -exec test -e {} \; -print | grep -q .; then
+            echo "ERROR: Found broken symlinks:"
+            find . -type l ! -exec test -e {} \; -print
+            exit 1
+          fi
+          echo "No broken symlinks found"

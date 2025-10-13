@@ -1,0 +1,14 @@
+# ABOUTME: Test workflow for protect-master (runs on push to master)
+name: Test Protect Master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  protect-master:
+    name: Test Protect Master on Push
+    uses: maxrantil/.github/.github/workflows/protect-master-reusable.yml@master
+    with:
+      protected-branch: 'master'
