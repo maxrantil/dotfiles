@@ -45,6 +45,29 @@ done
 echo "[OK] Prerequisites verified"
 echo ""
 
+# Determine zsh config directory (XDG Base Directory spec compliance)
+# BUG-056: Respect ZDOTDIR environment variable set by .zprofile
+# .zprofile sets ZDOTDIR=$HOME/.config/zsh (XDG spec)
+# Source .zprofile to get ZDOTDIR if it exists
+if [ -f "$DOTFILES_DIR/.zprofile" ]; then
+    # Extract ZDOTDIR from .zprofile without executing entire file
+    EXTRACTED_ZDOTDIR=$(grep -E '^export ZDOTDIR=' "$DOTFILES_DIR/.zprofile" | head -1 | sed 's/^export ZDOTDIR=//; s/"//g; s/'"'"'//g')
+    # Expand environment variables in extracted path
+    EXTRACTED_ZDOTDIR=$(eval echo "$EXTRACTED_ZDOTDIR")
+fi
+
+# Use extracted ZDOTDIR if found, otherwise fall back to $HOME
+ZSH_CONFIG_DIR="${EXTRACTED_ZDOTDIR:-$HOME}"
+
+# Create ZDOTDIR if it doesn't exist and is not $HOME
+if [ "$ZSH_CONFIG_DIR" != "$HOME" ] && [ ! -d "$ZSH_CONFIG_DIR" ]; then
+    mkdir -p "$ZSH_CONFIG_DIR" || {
+        echo "[ERROR] Failed to create ZDOTDIR: $ZSH_CONFIG_DIR" >&2
+        exit 1
+    }
+    echo "[CREATE] ZDOTDIR: $ZSH_CONFIG_DIR"
+fi
+
 # Backup and link function
 link_file() {
     local source="$1"
@@ -67,7 +90,7 @@ link_file() {
 
 # Link dotfiles
 link_file "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
-link_file "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
+link_file "$DOTFILES_DIR/.zshrc" "$ZSH_CONFIG_DIR/.zshrc"
 link_file "$DOTFILES_DIR/.aliases" "$HOME/.aliases"
 
 # Link inputrc for readline (bash, python REPL, etc.)
@@ -114,5 +137,8 @@ echo "  1. Install zsh: sudo apt install zsh"
 echo "  2. Set zsh as default: chsh -s \$(which zsh)"
 echo "  3. Install starship: curl -sS https://starship.rs/install.sh | sh"
 echo "  4. Install neovim: sudo apt install neovim"
-echo "  5. Restart your shell or run: source ~/.zshrc"
+echo "  5. Restart your shell (logout/login or exec zsh)"
 echo ""
+if [ "$ZSH_CONFIG_DIR" != "$HOME" ]; then
+    echo "Note: .zshrc installed to $ZSH_CONFIG_DIR/.zshrc (ZDOTDIR)"
+fi
