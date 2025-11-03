@@ -219,6 +219,9 @@ jobs:
           export HOME=$TEMP_HOME
           bash install.sh 2>&1 | tee $DIAGNOSTICS_DIR/install-backup-test.log
 
+          # Reset ZDOTDIR for verification checks
+          ZDOTDIR="$TEMP_HOME/.config/zsh"
+
           # Check if backup directory was created (may not be if no conflicts)
           BACKUP_DIR=$(find $TEMP_HOME -maxdepth 1 -name ".dotfiles_backup_*" -type d | head -1)
 

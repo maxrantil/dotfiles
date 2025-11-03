@@ -2,8 +2,8 @@
 
 **Date**: 2025-11-03
 **Issue**: #52 - Enhancement: Improve installation testing coverage
-**Branch**: claude/check-open-issues-011CUmEY7pmdaNim1FDnrpqo
-**PR**: #59
+**Branch**: fix/issue-52-installation-testing
+**PR**: (to be created)
 
 ---
 
