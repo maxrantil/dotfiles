@@ -1,0 +1,17 @@
+title = "Gitleaks Config for dotfiles"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow known false positives in dotfiles"
+paths = [
+  '''README\.md$''',  # Documentation may contain example credentials
+  '''\.github/workflows/.*''',  # Workflow files may reference example tokens
+]
+
+regexes = [
+  '''example\.com''',  # Allow example domains
+  '''your-.*-here''',  # Allow placeholder patterns
+  '''REPLACEME''',  # Allow placeholder tokens
+]
