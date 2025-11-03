@@ -54,18 +54,28 @@ Every pull request automatically runs:
 ### Quick Testing (30 seconds)
 
 ```bash
-# Run automated tests
+# Run automated Docker tests
 ./tests/docker-test.sh
 
 # Interactive shell for debugging
 ./tests/docker-test.sh --interactive
+
+# Run comprehensive test suite standalone
+./tests/installation-test.sh
 ```
 
-**Tests include:**
-- Shell startup verification
-- Starship caching validation
-- Dotfiles symlink creation
-- Performance measurements
+**Comprehensive test coverage includes:**
+1. **Symlink verification** - All expected dotfiles properly linked
+2. **Symlink target validation** - Links point to correct source files
+3. **ZDOTDIR compliance** - .zshrc correctly placed in XDG directory
+4. **Conditional file handling** - Optional files (.gitconfig, inputrc) tested
+5. **Idempotency** - Running install.sh twice produces identical results
+6. **Backup functionality** - Existing files safely backed up before linking
+7. **Shortcut generation** - Bookmark shortcuts created from bookmarks file
+8. **Environment isolation** - Tests run in clean environment
+9. **Performance regression** - Install completes within 30-second threshold
+
+All tests include detailed diagnostics and colored output for easy debugging.
 
 ### Full Integration Testing
 
@@ -134,4 +144,4 @@ Having issues? See the [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions
 
 ---
 
-_Last updated: 2025-10-13_
+_Last updated: 2025-11-03_

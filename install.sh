@@ -55,8 +55,13 @@ if [ -f "$DOTFILES_DIR/.zprofile" ]; then
 
     # Extract ZDOTDIR from .zprofile without executing entire file
     EXTRACTED_ZDOTDIR=$(grep -E '^export ZDOTDIR=' "$DOTFILES_DIR/.zprofile" | head -1 | sed 's/^export ZDOTDIR=//; s/"//g; s/'"'"'//g')
-    # Expand environment variables in extracted path
-    EXTRACTED_ZDOTDIR=$(eval echo "$EXTRACTED_ZDOTDIR")
+
+    # Safely expand known variables (no eval to prevent command injection)
+    # Only expand allowlisted patterns: ${HOME}, ${XDG_CONFIG_HOME}, $HOME, $XDG_CONFIG_HOME
+    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{HOME\}/$HOME}"
+    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$HOME/$HOME}"
+    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{XDG_CONFIG_HOME\}/$XDG_CONFIG_HOME}"
+    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$XDG_CONFIG_HOME/$XDG_CONFIG_HOME}"
 fi
 
 # Use extracted ZDOTDIR if found, otherwise fall back to $HOME
