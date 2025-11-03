@@ -50,6 +50,9 @@ echo ""
 # .zprofile sets ZDOTDIR=$HOME/.config/zsh (XDG spec)
 # Source .zprofile to get ZDOTDIR if it exists
 if [ -f "$DOTFILES_DIR/.zprofile" ]; then
+    # Set XDG_CONFIG_HOME first (needed for ZDOTDIR expansion)
+    export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+
     # Extract ZDOTDIR from .zprofile without executing entire file
     EXTRACTED_ZDOTDIR=$(grep -E '^export ZDOTDIR=' "$DOTFILES_DIR/.zprofile" | head -1 | sed 's/^export ZDOTDIR=//; s/"//g; s/'"'"'//g')
     # Expand environment variables in extracted path
