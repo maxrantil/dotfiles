@@ -66,6 +66,8 @@ jobs:
       - name: Run install.sh in test home (first run)
         id: first_run
         run: |
+          # Environment isolation: Unset variables that could affect installation behavior
+          unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME ZDOTDIR
           export HOME=$TEMP_HOME
           START_TIME=$(date +%s%3N)
           bash install.sh 2>&1 | tee $DIAGNOSTICS_DIR/install-first-run.log
@@ -193,6 +195,7 @@ jobs:
         id: second_run
         run: |
           echo "Testing idempotency - running install.sh again..."
+          unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME ZDOTDIR
           export HOME=$TEMP_HOME
           START_TIME=$(date +%s%3N)
           bash install.sh 2>&1 | tee $DIAGNOSTICS_DIR/install-second-run.log
@@ -212,6 +215,7 @@ jobs:
           echo "test content" > "$TEMP_HOME/.test-backup-file"
 
           # Run install.sh again - this should create backup if conflicts exist
+          unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME ZDOTDIR
           export HOME=$TEMP_HOME
           bash install.sh 2>&1 | tee $DIAGNOSTICS_DIR/install-backup-test.log
 

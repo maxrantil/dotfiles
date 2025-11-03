@@ -251,7 +251,7 @@ test_no_duplicates() {
 
     # Check no duplicate directories
     local config_dirs
-    config_dirs=$(find "$TEST_HOME/.config" -type d -name "nvim" 2>/dev/null | wc -l)
+    config_dirs=$(find "$TEST_HOME/.config" -type d -name "nvim" 2> /dev/null | wc -l)
     if [ "$config_dirs" -ne 1 ]; then
         fail "Duplicate directories created (found $config_dirs nvim dirs)"
         echo "ERROR: Duplicate directories" >> "$DIAGNOSTICS_DIR/idempotency-errors.log"
@@ -279,7 +279,7 @@ test_backup_functionality() {
 
     # Check if backup directory was created (might not be if no conflicts)
     local backup_dir
-    backup_dir=$(find "$TEST_HOME" -maxdepth 1 -name ".dotfiles_backup_*" -type d 2>/dev/null | head -1)
+    backup_dir=$(find "$TEST_HOME" -maxdepth 1 -name ".dotfiles_backup_*" -type d 2> /dev/null | head -1)
 
     if [ -n "$backup_dir" ]; then
         pass "Backup directory created: $(basename "$backup_dir")"
@@ -304,10 +304,10 @@ test_performance() {
     print_test "Performance regression check"
 
     local first_run
-    first_run=$(cat "$DIAGNOSTICS_DIR/first-run-duration.txt" 2>/dev/null || echo "0")
+    first_run=$(cat "$DIAGNOSTICS_DIR/first-run-duration.txt" 2> /dev/null || echo "0")
     local second_run
-    second_run=$(cat "$DIAGNOSTICS_DIR/second-run-duration.txt" 2>/dev/null || echo "0")
-    local threshold=30000  # 30 seconds
+    second_run=$(cat "$DIAGNOSTICS_DIR/second-run-duration.txt" 2> /dev/null || echo "0")
+    local threshold=30000 # 30 seconds
 
     echo "Performance metrics:"
     echo "  First run:  ${first_run}ms"
