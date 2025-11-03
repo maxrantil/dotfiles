@@ -27,6 +27,13 @@ DOTFILES_DIR="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 DIAGNOSTICS_DIR="$TEST_HOME/diagnostics"
 WORKSPACE="${GITHUB_WORKSPACE:-$DOTFILES_DIR}"
 
+# Environment isolation: Unset variables that could affect installation behavior
+# This prevents tests from inheriting parent environment settings
+unset XDG_CONFIG_HOME
+unset XDG_DATA_HOME
+unset XDG_CACHE_HOME
+unset ZDOTDIR
+
 # Create diagnostics directory
 mkdir -p "$DIAGNOSTICS_DIR"
 
@@ -161,7 +168,8 @@ test_symlink_targets() {
         local expected_target="$2"
 
         if [ -L "$TEST_HOME/$symlink" ]; then
-            local actual_target=$(readlink -f "$TEST_HOME/$symlink")
+            local actual_target
+            actual_target=$(readlink -f "$TEST_HOME/$symlink")
             if [ "$actual_target" != "$expected_target" ]; then
                 fail "$symlink points to $actual_target, expected $expected_target"
                 echo "ERROR: $symlink target mismatch" >> "$DIAGNOSTICS_DIR/target-errors.log"
@@ -242,7 +250,8 @@ test_no_duplicates() {
     fi
 
     # Check no duplicate directories
-    local config_dirs=$(find "$TEST_HOME/.config" -type d -name "nvim" 2>/dev/null | wc -l)
+    local config_dirs
+    config_dirs=$(find "$TEST_HOME/.config" -type d -name "nvim" 2>/dev/null | wc -l)
     if [ "$config_dirs" -ne 1 ]; then
         fail "Duplicate directories created (found $config_dirs nvim dirs)"
         echo "ERROR: Duplicate directories" >> "$DIAGNOSTICS_DIR/idempotency-errors.log"
@@ -269,7 +278,8 @@ test_backup_functionality() {
     bash "$DOTFILES_DIR/install.sh" 2>&1 | tee "$DIAGNOSTICS_DIR/install-backup-test.log" > /dev/null
 
     # Check if backup directory was created (might not be if no conflicts)
-    local backup_dir=$(find "$TEST_HOME" -maxdepth 1 -name ".dotfiles_backup_*" -type d 2>/dev/null | head -1)
+    local backup_dir
+    backup_dir=$(find "$TEST_HOME" -maxdepth 1 -name ".dotfiles_backup_*" -type d 2>/dev/null | head -1)
 
     if [ -n "$backup_dir" ]; then
         pass "Backup directory created: $(basename "$backup_dir")"
@@ -293,8 +303,10 @@ test_backup_functionality() {
 test_performance() {
     print_test "Performance regression check"
 
-    local first_run=$(cat "$DIAGNOSTICS_DIR/first-run-duration.txt" 2>/dev/null || echo "0")
-    local second_run=$(cat "$DIAGNOSTICS_DIR/second-run-duration.txt" 2>/dev/null || echo "0")
+    local first_run
+    first_run=$(cat "$DIAGNOSTICS_DIR/first-run-duration.txt" 2>/dev/null || echo "0")
+    local second_run
+    second_run=$(cat "$DIAGNOSTICS_DIR/second-run-duration.txt" 2>/dev/null || echo "0")
     local threshold=30000  # 30 seconds
 
     echo "Performance metrics:"
