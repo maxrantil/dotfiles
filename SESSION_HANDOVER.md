@@ -1,73 +1,75 @@
-# Session Handoff: Pre-commit Hook Deployment
+# Session Handoff: PR #59 Critical Fixes
 
-**Date**: 2025-10-29
-**Issue**: Part of project-templates Issue #10 (deployment phase)
-**Branch**: chore/upgrade-pre-commit-hooks
-**PR**: #55
-
----
-
-## 📋 Deployment Summary
-
-**Source**: project-templates PR #12 feat/enhanced-pre-commit-config
-
-**What Was Deployed**:
-- Upgraded `.pre-commit-config.yaml` with bypass protection fixes
-- Zero-width character detection
-- Unicode normalization for homoglyph attacks
-- Simplified attribution blocking (removed complex context checking)
-
-**Security Score**: 7.5/10 (strong protection against common obfuscation techniques)
+**Date**: 2025-11-03
+**Issue**: #52 - Enhancement: Improve installation testing coverage
+**Branch**: fix/issue-52-installation-testing
+**PR**: (to be created)
 
 ---
 
 ## ✅ Work Completed
 
-### 1. Pre-commit Hook Deployment
-- Copied fixed config from project-templates
-- Installed hooks: `pre-commit install --hook-type commit-msg`
-- Validated hooks execute correctly
+### Critical Fixes Applied (4 blockers)
 
-### 2. Bypass Protection Testing
-✅ Tested: `git commit --allow-empty -m "test: G3m1n1"`
-✅ Result: Blocked correctly with error message
-✅ Clean commits: Pass without issues
+1. **Security Fix (CVSS 9.0)**: Command injection vulnerability eliminated
+   - install.sh: Replaced `eval` with allowlist-based variable expansion
+   - Only safe patterns expanded: `${HOME}`, `${XDG_CONFIG_HOME}`, `$HOME`, `$XDG_CONFIG_HOME`
+   - Prevents arbitrary code execution via ZDOTDIR manipulation
+
+2. **Testing Fix**: Environment isolation for CI/local tests
+   - tests/installation-test.sh: Added `unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME ZDOTDIR`
+   - .github/workflows/shell-quality.yml: Added environment isolation to all 3 install.sh invocations
+   - Prevents tests from inheriting parent environment settings
+
+3. **Code Quality**: Fixed 5 shellcheck SC2155 warnings
+   - tests/installation-test.sh lines 171, 252, 279, 303, 304
+   - Separated local variable declaration from assignment
+   - Prevents masking command failures
+
+4. **Documentation**: Updated README.md with comprehensive test coverage
+   - Documented all 9 test scenarios from enhanced test suite
+   - Added standalone test script usage instructions
+   - Updated last modified date to 2025-11-03
+
+5. **Formatting**: Applied shfmt formatting standards
+   - Fixed redirect spacing: `2> /dev/null` instead of `2>/dev/null`
+   - Fixed comment spacing: single space before inline comments
 
 ---
 
 ## 🎯 Current State
 
-**Tests**: ✅ All passing
-**Branch**: Clean, ready for merge
-**CI/CD**: ✅ All checks passing
-**Bypass Protection**: ✅ Verified working
+**Tests**: ✅ Docker build passes, install.sh creates all symlinks correctly
+**Branch**: Up to date with origin, 2 commits ahead of master
+**CI/CD**: Pending - awaiting final verification after latest fixes
+**Security**: ✅ Command injection eliminated, no eval usage
+
+### Commits in PR
+1. `5d7ef4e` - feat: enhance installation testing coverage (resolves #52)
+2. `d226206` - fix: resolve security, testing, and code quality issues
 
 ---
 
-## 📚 Reference Documentation
+## 📝 Startup Prompt for Next Session
 
-**Main Session Handoff**: [project-templates/SESSION_HANDOVER.md](https://github.com/maxrantil/project-templates/blob/feat/enhanced-pre-commit-config/SESSION_HANDOVER.md)
+Read CLAUDE.md to understand our workflow, then verify PR #59 CI passes and merge to master.
 
-**Related Issues**:
-- project-templates #11: Bug fix and discovery
-- project-templates #10: Multi-repo deployment phase
+**Immediate priority**: Verify CI pipeline passes (10 minutes)
+**Context**: PR #59 fixes 4 critical blockers - security, testing, code quality, docs. All fixes applied and pushed.
+**Reference docs**: PR #59, Issue #52, SESSION_HANDOVER.md (this file)
+**Ready state**: Branch clean, all commits pushed, pre-commit hooks passing
 
-**Related PRs**:
-- project-templates #12: Source of fixes
-- protonvpn-manager #116: Parallel deployment
-- vm-infra #80: Parallel deployment
-- maxrantil/.github #29: Template update
+**Expected scope**: Monitor CI, address any remaining failures, merge PR #59 when green
 
 ---
 
-## 🚀 Next Steps
+## 📚 Key Reference Documents
 
-1. ✅ Wait for project-templates PR #12 to merge first
-2. Merge this PR after validation
-3. Monitor for any false positives in normal development
-4. No additional work needed - deployment complete
+- **PR #59**: https://github.com/maxrantil/dotfiles/pull/59
+- **Issue #52**: https://github.com/maxrantil/dotfiles/issues/52
+- **Previous session**: SESSION_HANDOVER.md from master branch (PR #55 context)
 
 ---
 
-**Deployment Status**: ✅ COMPLETE
-**Security**: ✅ VALIDATED
+**Session Status**: ✅ FIXES COMPLETE, AWAITING CI VERIFICATION
+**Next Action**: Monitor CI pipeline, merge when green

@@ -39,8 +39,10 @@ if [ -f "$DOTFILES_DIR/bm-dirs" ]; then
                 continue
             fi
 
-            # Use printf %q for safe shell escaping
-            printf "alias %s='cd %q && ls -A'\n" "$alias_name" "$path" >> "$OUTPUT"
+            # Preserve variable references (like $HOME, ${XDG_CONFIG_HOME})
+            # Escape single quotes in path if present
+            path_escaped="${path//\'/\'\\\'\'}"
+            printf "alias %s='cd %s && ls -A'\n" "$alias_name" "$path_escaped" >> "$OUTPUT"
         else
             echo "Warning: Malformed line in bm-dirs: $line" >&2
         fi
@@ -65,8 +67,10 @@ if [ -f "$DOTFILES_DIR/bm-files" ]; then
                 continue
             fi
 
-            # Use printf %q for safe shell escaping
-            printf "alias %s='\$EDITOR %q'\n" "$alias_name" "$path" >> "$OUTPUT"
+            # Preserve variable references (like $HOME, ${XDG_CONFIG_HOME})
+            # Escape single quotes in path if present
+            path_escaped="${path//\'/\'\\\'\'}"
+            printf "alias %s='\$EDITOR %s'\n" "$alias_name" "$path_escaped" >> "$OUTPUT"
         else
             echo "Warning: Malformed line in bm-files: $line" >&2
         fi

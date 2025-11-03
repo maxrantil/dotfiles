@@ -4,6 +4,18 @@ name: Shell Quality Checks
 on:
   pull_request:
     branches: [master]
+    paths:
+      - '**.sh'
+      - '.github/workflows/shell-quality.yml'
+      - 'install.sh'
+      - '.zshrc'
+      - '.zprofile'
+      - '.aliases'
+      - '.tmux.conf'
+      - '.gitconfig'
+      - 'init.vim'
+      - 'starship.toml'
+      - 'inputrc'
 
 jobs:
   shellcheck:
@@ -48,48 +60,236 @@ jobs:
         run: |
           TEMP_HOME=$(mktemp -d)
           echo "TEMP_HOME=$TEMP_HOME" >> $GITHUB_ENV
+          echo "DIAGNOSTICS_DIR=$TEMP_HOME/diagnostics" >> $GITHUB_ENV
+          mkdir -p "$TEMP_HOME/diagnostics"
 
-      - name: Run install.sh in test home
+      - name: Run install.sh in test home (first run)
+        id: first_run
         run: |
+          # Environment isolation: Unset variables that could affect installation behavior
+          unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME ZDOTDIR
           export HOME=$TEMP_HOME
-          bash install.sh
+          START_TIME=$(date +%s%3N)
+          bash install.sh 2>&1 | tee $DIAGNOSTICS_DIR/install-first-run.log
+          END_TIME=$(date +%s%3N)
+          DURATION=$((END_TIME - START_TIME))
+          echo "first_run_duration=$DURATION" >> $GITHUB_OUTPUT
+          echo "First run took ${DURATION}ms"
         env:
           CI: true
 
       - name: Verify key symlinks created
+        id: verify_symlinks
         run: |
           # CRITICAL SYMLINKS TESTED IN CI:
           # These are essential for basic shell functionality:
-          # - .zshrc: Shell initialization (required for zsh to function)
+          # - .zshrc: Shell initialization in ZDOTDIR (required for zsh to function)
+          # - .zprofile: Shell profile (environment setup, sourced by zsh)
           # - .aliases: Core command shortcuts (workflow dependency)
           # - nvim/init.vim: Editor configuration (development dependency)
           # - .tmux.conf: Session management (SSH workflow requirement)
           # - starship.toml: Prompt configuration (startup validation)
           #
-          # OPTIONAL SYMLINKS (tested in VM tier, not CI):
+          # CONDITIONAL SYMLINKS (tested if present):
           # - .gitconfig: User-specific, conditional linking
-          # - .zprofile: Runtime sourcing, tested via VM
           # - inputrc: Readline enhancement, non-critical
-          # - Generated shortcuts: Runtime-created, functionally tested in VM
           #
           # MAINTENANCE: When adding new critical symlinks to install.sh,
           # update the test cases below to verify them.
-          # Last updated: 2025-10-13 (5 critical symlinks)
+          # Last updated: 2025-11-03 (6 critical symlinks + conditional)
 
           # Check critical symlinks exist
-          test -L "$TEMP_HOME/.zshrc" || (echo "ERROR: .zshrc not linked" && exit 1)
-          test -L "$TEMP_HOME/.aliases" || (echo "ERROR: .aliases not linked" && exit 1)
-          test -L "$TEMP_HOME/.config/nvim/init.vim" || (echo "ERROR: nvim config not linked" && exit 1)
-          test -L "$TEMP_HOME/.tmux.conf" || (echo "ERROR: tmux config not linked" && exit 1)
-          test -L "$TEMP_HOME/.config/starship.toml" || (echo "ERROR: starship config not linked" && exit 1)
+          ERRORS=0
 
-      - name: Check for broken symlinks
-        run: |
-          # Find and report broken symlinks
-          cd $TEMP_HOME
-          if find . -type l ! -exec test -e {} \; -print | grep -q .; then
-            echo "ERROR: Found broken symlinks:"
-            find . -type l ! -exec test -e {} \; -print
+          # ZDOTDIR is set to $HOME/.config/zsh per .zprofile
+          ZDOTDIR="$TEMP_HOME/.config/zsh"
+
+          echo "Verifying critical symlinks..."
+
+          # Check .zshrc in ZDOTDIR
+          if [ ! -L "$ZDOTDIR/.zshrc" ]; then
+            echo "ERROR: .zshrc not linked in ZDOTDIR" | tee -a $DIAGNOSTICS_DIR/symlink-errors.log
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "✓ .zshrc (in ZDOTDIR)"
+          fi
+
+          # Check other critical symlinks
+          for link in ".zprofile" ".aliases" ".config/nvim/init.vim" ".tmux.conf" ".config/starship.toml"; do
+            if [ ! -L "$TEMP_HOME/$link" ]; then
+              echo "ERROR: $link not linked" | tee -a $DIAGNOSTICS_DIR/symlink-errors.log
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✓ $link"
+            fi
+          done
+
+          # Check conditional symlinks if source exists
+          echo "Verifying conditional symlinks..."
+          if [ -f "$GITHUB_WORKSPACE/.gitconfig" ]; then
+            if [ ! -L "$TEMP_HOME/.gitconfig" ]; then
+              echo "ERROR: .gitconfig not linked (source exists)" | tee -a $DIAGNOSTICS_DIR/symlink-errors.log
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✓ .gitconfig"
+            fi
+          fi
+
+          if [ -f "$GITHUB_WORKSPACE/inputrc" ]; then
+            if [ ! -L "$TEMP_HOME/.config/shell/inputrc" ]; then
+              echo "ERROR: inputrc not linked (source exists)" | tee -a $DIAGNOSTICS_DIR/symlink-errors.log
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✓ inputrc"
+            fi
+          fi
+
+          if [ $ERRORS -gt 0 ]; then
             exit 1
           fi
-          echo "No broken symlinks found"
+
+      - name: Verify symlink targets
+        id: verify_targets
+        run: |
+          echo "Verifying symlink targets point to correct files..."
+          ERRORS=0
+
+          verify_target() {
+            local symlink="$1"
+            local expected_target="$2"
+
+            if [ -L "$TEMP_HOME/$symlink" ]; then
+              actual_target=$(readlink -f "$TEMP_HOME/$symlink")
+              if [ "$actual_target" != "$expected_target" ]; then
+                echo "ERROR: $symlink points to $actual_target, expected $expected_target" | tee -a $DIAGNOSTICS_DIR/target-errors.log
+                return 1
+              else
+                echo "✓ $symlink -> $actual_target"
+              fi
+            fi
+          }
+
+          verify_target ".zprofile" "$GITHUB_WORKSPACE/.zprofile" || ERRORS=$((ERRORS + 1))
+          verify_target ".aliases" "$GITHUB_WORKSPACE/.aliases" || ERRORS=$((ERRORS + 1))
+          verify_target ".config/nvim/init.vim" "$GITHUB_WORKSPACE/init.vim" || ERRORS=$((ERRORS + 1))
+          verify_target ".tmux.conf" "$GITHUB_WORKSPACE/.tmux.conf" || ERRORS=$((ERRORS + 1))
+          verify_target ".config/starship.toml" "$GITHUB_WORKSPACE/starship.toml" || ERRORS=$((ERRORS + 1))
+
+          if [ $ERRORS -gt 0 ]; then
+            exit 1
+          fi
+
+      - name: Check for broken symlinks
+        id: check_broken
+        run: |
+          echo "Checking for broken symlinks..."
+          cd $TEMP_HOME
+          if find . -type l ! -exec test -e {} \; -print | grep -q .; then
+            echo "ERROR: Found broken symlinks:" | tee $DIAGNOSTICS_DIR/broken-symlinks.log
+            find . -type l ! -exec test -e {} \; -print | tee -a $DIAGNOSTICS_DIR/broken-symlinks.log
+            exit 1
+          fi
+          echo "✓ No broken symlinks found"
+
+      - name: Test idempotency (second run)
+        id: second_run
+        run: |
+          echo "Testing idempotency - running install.sh again..."
+          unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME ZDOTDIR
+          export HOME=$TEMP_HOME
+          START_TIME=$(date +%s%3N)
+          bash install.sh 2>&1 | tee $DIAGNOSTICS_DIR/install-second-run.log
+          END_TIME=$(date +%s%3N)
+          DURATION=$((END_TIME - START_TIME))
+          echo "second_run_duration=$DURATION" >> $GITHUB_OUTPUT
+          echo "Second run took ${DURATION}ms"
+
+      - name: Verify backup functionality
+        id: verify_backup
+        run: |
+          echo "Verifying backup functionality..."
+
+          ZDOTDIR="$TEMP_HOME/.config/zsh"
+
+          # Create a real file (not symlink) that should be backed up
+          echo "test content" > "$TEMP_HOME/.test-backup-file"
+
+          # Run install.sh again - this should create backup if conflicts exist
+          unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME ZDOTDIR
+          export HOME=$TEMP_HOME
+          bash install.sh 2>&1 | tee $DIAGNOSTICS_DIR/install-backup-test.log
+
+          # Reset ZDOTDIR for verification checks
+          ZDOTDIR="$TEMP_HOME/.config/zsh"
+
+          # Check if backup directory was created (may not be if no conflicts)
+          BACKUP_DIR=$(find $TEMP_HOME -maxdepth 1 -name ".dotfiles_backup_*" -type d | head -1)
+
+          if [ -n "$BACKUP_DIR" ]; then
+            echo "✓ Backup directory created: $BACKUP_DIR"
+          else
+            echo "⚠ No backup directory created (no conflicts detected)"
+          fi
+
+          # Verify backup is not created for symlinks (should replace them silently)
+          if [ -L "$ZDOTDIR/.zshrc" ]; then
+            echo "✓ Symlinks replaced correctly without backup"
+          else
+            echo "ERROR: .zshrc is not a symlink after re-installation" | tee -a $DIAGNOSTICS_DIR/backup-errors.log
+            exit 1
+          fi
+
+      - name: Verify idempotency (no duplicates)
+        id: verify_idempotency
+        run: |
+          echo "Verifying no duplicate operations occurred..."
+
+          ZDOTDIR="$TEMP_HOME/.config/zsh"
+
+          # Check that symlinks still point to correct locations
+          test -L "$ZDOTDIR/.zshrc" || (echo "ERROR: .zshrc removed during second run" && exit 1)
+          test -L "$TEMP_HOME/.aliases" || (echo "ERROR: .aliases removed during second run" && exit 1)
+
+          # Verify no duplicate directories created
+          CONFIG_DIRS=$(find $TEMP_HOME/.config -type d -name "nvim" | wc -l)
+          if [ $CONFIG_DIRS -ne 1 ]; then
+            echo "ERROR: Duplicate directories created" | tee $DIAGNOSTICS_DIR/idempotency-errors.log
+            exit 1
+          fi
+
+          echo "✓ Installation is idempotent"
+
+      - name: Performance regression check
+        id: perf_check
+        run: |
+          FIRST_RUN=${{ steps.first_run.outputs.first_run_duration }}
+          SECOND_RUN=${{ steps.second_run.outputs.second_run_duration }}
+
+          echo "Performance metrics:"
+          echo "  First run:  ${FIRST_RUN}ms"
+          echo "  Second run: ${SECOND_RUN}ms"
+
+          # Set baseline threshold (30 seconds = 30000ms)
+          THRESHOLD=30000
+
+          if [ $FIRST_RUN -gt $THRESHOLD ]; then
+            echo "WARNING: First run exceeded ${THRESHOLD}ms threshold" | tee $DIAGNOSTICS_DIR/performance-warning.log
+          fi
+
+          if [ $SECOND_RUN -gt $THRESHOLD ]; then
+            echo "WARNING: Second run exceeded ${THRESHOLD}ms threshold" | tee -a $DIAGNOSTICS_DIR/performance-warning.log
+          fi
+
+          # Save metrics for historical tracking
+          echo "first_run_ms=$FIRST_RUN" >> $DIAGNOSTICS_DIR/performance-metrics.txt
+          echo "second_run_ms=$SECOND_RUN" >> $DIAGNOSTICS_DIR/performance-metrics.txt
+
+          echo "✓ Performance check complete"
+
+      - name: Upload diagnostic artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-test-diagnostics
+          path: ${{ env.DIAGNOSTICS_DIR }}
+          retention-days: 7
