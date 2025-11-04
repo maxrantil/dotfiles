@@ -161,6 +161,21 @@ autoload edit-command-line; zle -N edit-command-line
 bindkey '^e' edit-command-line
 bindkey -M vicmd '^e' edit-command-line
 
+# lf file manager integration - Ctrl+O to browse and cd
+lfcd () {
+    tmp="$(mktemp -uq)"
+    trap 'rm -f $tmp >/dev/null 2>&1 && trap - HUP INT QUIT TERM PWR EXIT' HUP INT QUIT TERM PWR EXIT
+    lf -last-dir-path="$tmp" "$@"
+    if [ -f "$tmp" ]; then
+        dir="$(cat "$tmp")"
+        [ -d "$dir" ] && [ "$dir" != "$(pwd)" ] && cd "$dir"
+    fi
+}
+bindkey -s '^o' '^ulfcd\n'
+
+# fzf-based cd to directory containing selected file - Ctrl+F
+bindkey -s '^f' '^ucd "$(dirname "$(fzf)")"\n'
+
 # FZF integration (if installed)
 if [ -f /usr/share/fzf/key-bindings.zsh ]; then
     safe_source /usr/share/fzf/key-bindings.zsh
@@ -228,8 +243,9 @@ ZSH KEYBOARD SHORTCUTS:
   Ctrl+R    - Search backward through history
   Ctrl+S    - Search forward through history
   Ctrl+A    - Jump to beginning of line
-  Ctrl+E    - Jump to end of line
-  Ctrl+E    - Edit command in vim (normal mode)
+  Ctrl+E    - Jump to end of line (or edit in vim in normal mode)
+  Ctrl+O    - Open lf file manager and cd to selected directory
+  Ctrl+F    - Use fzf to select file and cd to its directory
   Delete    - Delete character under cursor
 
 VI MODE INDICATORS:

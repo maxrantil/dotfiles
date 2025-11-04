@@ -73,6 +73,7 @@ repos:
         description: Lint bash scripts for common issues
         args: ['--severity=warning']
         types: [shell]
+        exclude: '\.zshrc$|\.zsh$'
 
   # =============================================================================
   # MARKDOWN LINTING (for documentation)
