@@ -10,6 +10,27 @@ cd ~/.dotfiles
 ./install.sh
 ```
 
+## Rollback
+
+If installation causes issues, restore your original configuration from the automatic backup:
+
+```bash
+# Interactive rollback with confirmation
+./rollback.sh
+
+# Automatic rollback without prompts
+./rollback.sh -y
+
+# Preview changes without applying
+./rollback.sh --dry-run
+```
+
+The rollback script:
+- Finds the latest backup directory (`.dotfiles_backup_*`)
+- Removes current dotfiles symlinks
+- Restores original files with preserved permissions
+- Cleans up the empty backup directory
+
 ## Post-Install Setup
 
 ### Git User Configuration
@@ -71,9 +92,10 @@ Every pull request automatically runs:
 4. **Conditional file handling** - Optional files (.gitconfig, inputrc) tested
 5. **Idempotency** - Running install.sh twice produces identical results
 6. **Backup functionality** - Existing files safely backed up before linking
-7. **Shortcut generation** - Bookmark shortcuts created from bookmarks file
-8. **Environment isolation** - Tests run in clean environment
-9. **Performance regression** - Install completes within 30-second threshold
+7. **Rollback functionality** - Restoration from backup with permission preservation
+8. **Shortcut generation** - Bookmark shortcuts created from bookmarks file
+9. **Environment isolation** - Tests run in clean environment
+10. **Performance regression** - Install completes within 30-second threshold
 
 All tests include detailed diagnostics and colored output for easy debugging.
 
@@ -144,4 +166,4 @@ Having issues? See the [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions
 
 ---
 
-_Last updated: 2025-11-03_
+_Last updated: 2025-11-04_
