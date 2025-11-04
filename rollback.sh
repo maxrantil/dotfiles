@@ -14,11 +14,11 @@ for arg in "$@"; do
             DRY_RUN=true
             shift
             ;;
-        -y|--yes)
+        -y | --yes)
             AUTO_YES=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Rollback dotfiles installation from latest backup"
@@ -43,11 +43,26 @@ for arg in "$@"; do
 done
 
 # Find latest backup directory
-LATEST_BACKUP=$(find "$HOME" -maxdepth 1 -name ".dotfiles_backup_*" -type d 2>/dev/null | sort -r | head -1)
+LATEST_BACKUP=$(find "$HOME" -maxdepth 1 -name ".dotfiles_backup_*" -type d 2> /dev/null | sort -r | head -1)
 
 if [ -z "$LATEST_BACKUP" ]; then
     echo "ERROR: No backup found" >&2
     echo "Looked for directories matching: $HOME/.dotfiles_backup_*" >&2
+    exit 1
+fi
+
+# Validate backup directory name format (YYYYMMDD_HHMMSS)
+backup_name=$(basename "$LATEST_BACKUP")
+if ! [[ "$backup_name" =~ ^\.dotfiles_backup_[0-9]{8}_[0-9]{6}$ ]]; then
+    echo "ERROR: Invalid backup directory format: $backup_name" >&2
+    echo "Expected format: .dotfiles_backup_YYYYMMDD_HHMMSS" >&2
+    exit 1
+fi
+
+# Validate backup directory is not empty
+if [ -z "$(ls -A "$LATEST_BACKUP")" ]; then
+    echo "ERROR: Backup directory is empty: $LATEST_BACKUP" >&2
+    echo "Cannot perform rollback from empty backup" >&2
     exit 1
 fi
 
@@ -104,11 +119,18 @@ ZSH_CONFIG_DIR="$HOME"
 if [ -f "$DOTFILES_DIR/.zprofile" ]; then
     export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
     EXTRACTED_ZDOTDIR=$(grep -E '^export ZDOTDIR=' "$DOTFILES_DIR/.zprofile" | head -1 | sed 's/^export ZDOTDIR=//; s/"//g; s/'"'"'//g')
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{HOME\}/$HOME}"
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$HOME/$HOME}"
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{XDG_CONFIG_HOME\}/$XDG_CONFIG_HOME}"
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$XDG_CONFIG_HOME/$XDG_CONFIG_HOME}"
-    ZSH_CONFIG_DIR="${EXTRACTED_ZDOTDIR:-$HOME}"
+
+    # Validate extracted value contains only safe characters
+    if [[ "$EXTRACTED_ZDOTDIR" =~ ^[a-zA-Z0-9/_\$\{\}\.-]+$ ]]; then
+        EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{HOME\}/$HOME}"
+        EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$HOME/$HOME}"
+        EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{XDG_CONFIG_HOME\}/$XDG_CONFIG_HOME}"
+        EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$XDG_CONFIG_HOME/$XDG_CONFIG_HOME}"
+        ZSH_CONFIG_DIR="${EXTRACTED_ZDOTDIR:-$HOME}"
+    else
+        echo "WARNING: Invalid ZDOTDIR format detected, using HOME" >&2
+        ZSH_CONFIG_DIR="$HOME"
+    fi
 fi
 
 # List of common symlink locations
@@ -126,8 +148,12 @@ SYMLINK_LOCATIONS=(
 # Remove current symlinks
 echo "Removing current symlinks..."
 for symlink in "${SYMLINK_LOCATIONS[@]}"; do
-    if [ -L "$symlink" ]; then
-        rm "$symlink"
+    # Double-check to mitigate TOCTOU race condition
+    if [ -L "$symlink" ] && [ -L "$symlink" ]; then
+        rm -f "$symlink" || {
+            echo "  [WARNING] Failed to remove symlink: $(basename "$symlink")" >&2
+            continue
+        }
         echo "  [REMOVED] $(basename "$symlink")"
     fi
 done

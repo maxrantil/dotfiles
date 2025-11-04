@@ -265,6 +265,49 @@ test_dry_run() {
     fi
 }
 
+# Test 10: Empty backup directory error
+test_empty_backup_error() {
+    print_test "Error handling when backup directory is empty"
+
+    # Create clean environment with empty backup
+    local empty_home
+    empty_home=$(mktemp -d)
+    mkdir -p "$empty_home/.dotfiles_backup_20250101_120000"
+
+    # Run rollback script and expect failure
+    if HOME="$empty_home" bash "$ROLLBACK_SCRIPT" 2>&1 | grep -q "Backup directory is empty"; then
+        pass "Correctly reports empty backup directory"
+        rm -rf "$empty_home"
+        return 0
+    else
+        fail "Did not report empty backup directory"
+        rm -rf "$empty_home"
+        return 1
+    fi
+}
+
+# Test 11: Invalid backup directory name format
+test_invalid_backup_format() {
+    print_test "Error handling for invalid backup directory format"
+
+    # Create clean environment with invalid backup name
+    local invalid_home
+    invalid_home=$(mktemp -d)
+    mkdir -p "$invalid_home/.dotfiles_backup_invalid_name"
+    echo "test" > "$invalid_home/.dotfiles_backup_invalid_name/.zshrc"
+
+    # Run rollback script and expect failure
+    if HOME="$invalid_home" bash "$ROLLBACK_SCRIPT" 2>&1 | grep -q "Invalid backup directory format"; then
+        pass "Correctly reports invalid backup format"
+        rm -rf "$invalid_home"
+        return 0
+    else
+        fail "Did not report invalid backup format"
+        rm -rf "$invalid_home"
+        return 1
+    fi
+}
+
 # Main test execution
 main() {
     print_header "Rollback Script Test Suite"
@@ -277,6 +320,8 @@ main() {
     test_script_executable || true
     test_find_latest_backup || true
     test_no_backup_error || true
+    test_empty_backup_error || true
+    test_invalid_backup_format || true
     test_noninteractive_rollback || true
     test_symlink_removal || true
     test_file_content_preservation || true
