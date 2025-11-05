@@ -35,11 +35,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache shfmt binary
+        uses: actions/cache@v4
+        id: cache-shfmt
+        with:
+          path: ~/.local/bin/shfmt
+          key: shfmt-v3.7.0-${{ runner.os }}
+
       - name: Install shfmt
+        if: steps.cache-shfmt.outputs.cache-hit != 'true'
         run: |
-          wget -O shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
-          chmod +x shfmt
-          sudo mv shfmt /usr/local/bin/
+          mkdir -p ~/.local/bin
+          wget -O ~/.local/bin/shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
+          chmod +x ~/.local/bin/shfmt
+
+      - name: Add shfmt to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Check formatting on .sh files only
         run: |
