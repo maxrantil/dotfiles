@@ -142,11 +142,11 @@ echo "=================================="
 
 echo ""
 echo "Next steps:"
-echo "  1. Install zsh: sudo apt install zsh"  # pragma: allowlist sudo-install-doc
+echo "  1. Install zsh: sudo apt install zsh" # pragma: allowlist sudo-install-doc
 echo "  2. Set zsh as default: chsh -s \$(which zsh)"
-echo "  3. Install starship: curl -sS https://starship.rs/install.sh | sh"  # pragma: allowlist starship-install-doc
-echo "  4. Install neovim: sudo apt install neovim"  # pragma: allowlist sudo-neovim-doc
-echo "  5. Restart your shell (logout/login or exec zsh)"  # pragma: allowlist exec-zsh-doc
+echo "  3. Install starship: curl -sS https://starship.rs/install.sh | sh" # pragma: allowlist starship-install-doc
+echo "  4. Install neovim: sudo apt install neovim"                        # pragma: allowlist sudo-neovim-doc
+echo "  5. Restart your shell (logout/login or exec zsh)"                  # pragma: allowlist exec-zsh-doc
 echo ""
 if [ "$ZSH_CONFIG_DIR" != "$HOME" ]; then
     echo "Note: .zshrc installed to $ZSH_CONFIG_DIR/.zshrc (ZDOTDIR)"
