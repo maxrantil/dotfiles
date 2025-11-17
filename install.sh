@@ -53,10 +53,10 @@ if [ -f "$DOTFILES_DIR/.zprofile" ]; then
     # Set XDG_CONFIG_HOME first (needed for ZDOTDIR expansion)
     export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-    # Extract ZDOTDIR from .zprofile without executing entire file
+    # Extract ZDOTDIR from .zprofile without executing entire file  # pragma: allowlist exec-word-in-comment
     EXTRACTED_ZDOTDIR=$(grep -E '^export ZDOTDIR=' "$DOTFILES_DIR/.zprofile" | head -1 | sed 's/^export ZDOTDIR=//; s/"//g; s/'"'"'//g')
 
-    # Safely expand known variables (no eval to prevent command injection)
+    # Safely expand known variables (no eval to prevent command injection)  # pragma: allowlist eval-comment-doc
     # Only expand allowlisted patterns: ${HOME}, ${XDG_CONFIG_HOME}, $HOME, $XDG_CONFIG_HOME
     EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{HOME\}/$HOME}"
     EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$HOME/$HOME}"
@@ -141,11 +141,11 @@ echo "=================================="
 
 echo ""
 echo "Next steps:"
-echo "  1. Install zsh: sudo apt install zsh"
+echo "  1. Install zsh: sudo apt install zsh"  # pragma: allowlist sudo-install-doc
 echo "  2. Set zsh as default: chsh -s \$(which zsh)"
-echo "  3. Install starship: curl -sS https://starship.rs/install.sh | sh"
-echo "  4. Install neovim: sudo apt install neovim"
-echo "  5. Restart your shell (logout/login or exec zsh)"
+echo "  3. Install starship: curl -sS https://starship.rs/install.sh | sh"  # pragma: allowlist starship-install-doc
+echo "  4. Install neovim: sudo apt install neovim"  # pragma: allowlist sudo-neovim-doc
+echo "  5. Restart your shell (logout/login or exec zsh)"  # pragma: allowlist exec-zsh-doc
 echo ""
 if [ "$ZSH_CONFIG_DIR" != "$HOME" ]; then
     echo "Note: .zshrc installed to $ZSH_CONFIG_DIR/.zshrc (ZDOTDIR)"
