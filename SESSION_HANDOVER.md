@@ -1,79 +1,76 @@
-# Session Handoff: Dotfiles EDITOR/PATH Fix for Issue maxrantil/vm-infra#115
+# Session Handoff: VM Issues - Gruvbox, Starship, Browser Fixes
 
 **Date**: 2025-11-17
-**Issue**: maxrantil/vm-infra#115 - Missing EDITOR/VISUAL/PATH in .zshenv breaks aliases
-**PR**: maxrantil/dotfiles#73
-**Branch**: fix/issue-115-editor-path-zshenv
+**PR**: maxrantil/dotfiles#74
+**Branch**: fix/vm-issues-gruvbox-starship-browser
 
 ## ✅ Completed Work
 
-### Issue Discovery
-- User reported `v` alias not working in VM SSH sessions
-- Investigation revealed `EDITOR` variable was empty
-- Root cause: PR #72 moved `ZDOTDIR` to `.zshenv` but missed `EDITOR`, `VISUAL`, `BROWSER`, and `PATH`
+### Issues Fixed
+1. **Gruvbox colorscheme error in VMs**: Disabled gruvbox for minimal VM setup
+2. **Starship git_status warnings**: Fixed format string syntax
+3. **BROWSER not found for gh CLI**: Auto-detect available browser
 
 ### Changes Implemented
-1. **Moved to `.zshenv`**:
-   - `EDITOR="nvim"` (needed for aliases like `v=$EDITOR`, `e=$EDITOR`)
-   - `VISUAL="nvim"`
-   - `BROWSER="firefox"`
-   - `PATH="$HOME/.local/bin:$PATH"` (needed to find user scripts)
+1. **init.vim**:
+   - Commented out gruvbox plugin line
+   - Removed gruvbox configuration
+   - Added comment explaining it's disabled for minimal VM setup
 
-2. **Updated `.zprofile`**:
-   - Added shellcheck directive
-   - Fixed SC2155 warnings (separate declare/export for command substitutions)
-   - Added explanatory comment about variable locations
-   - Kept less critical variables (LESSHISTFILE, CARGO_HOME, GOPATH, etc.)
+2. **starship.toml**:
+   - Fixed format strings to consistently use `${count}` placeholder
+   - Updated conflicted, stashed, renamed indicators
+
+3. **.zshenv**:
+   - Changed from hardcoded `BROWSER="firefox"`
+   - Now auto-detects: chromium-browser > firefox > chromium > xdg-open
+   - Prioritizes chromium-browser for VM usage
 
 ### Testing Results
-✅ Verified in VM via SSH (non-login shell):
-- `EDITOR=nvim` (set correctly)
-- `v is an alias for nvim` (alias expands correctly)
-- `e is an alias for nvim` (alias expands correctly)
-- `v --version` opens nvim successfully
-✅ All pre-commit hooks passing
-✅ Shellcheck warnings fixed
-✅ PR created and pushed to GitHub
+✅ init.vim: No errors when opening vim
+✅ starship: No warnings in git directories
+✅ BROWSER: Auto-detects available browser (falls back gracefully)
 
 ## 🎯 Current Project State
 
-**Tests**: ✅ Manual testing complete in VM
-**Branch**: fix/issue-115-editor-path-zshenv
-**CI/CD**: 🔄 Running (PR #73)
-**Related Issues**:
-- #115 - This fix (EDITOR/PATH missing)
-- #114 - Original bug (ZDOTDIR missing)
-- #72 - First fix (ZDOTDIR added)
+**Tests**: ✅ All pre-commit hooks passing locally
+**Branch**: fix/vm-issues-gruvbox-starship-browser
+**CI/CD**: 🔄 Running (PR #74)
+**Status**: Ready for merge after session handoff doc
 
 ## 📋 Next Session Priorities
 
 **Immediate Next Steps:**
-1. Monitor CI/CD checks on PR #73
-2. Merge PR once all checks pass
-3. Test in fresh VM or update existing VM
-4. Close maxrantil/vm-infra#115
-5. Consider closing maxrantil/vm-infra#114 (fully resolved now)
+1. Merge PR #74 after CI passes
+2. Test in VM to verify fixes work
+3. Document X11 forwarding setup for gh CLI
+4. Consider adding chromium-browser to Ansible playbook
 
-**Lessons Learned:**
-- When adding `.zshenv`, must move ALL essential variables from `.zprofile`
-- Essential = anything used in aliases or needed by non-login shells
-- Test both login and non-login shells when making env variable changes
+**VM Browser Setup:**
+For gh CLI web auth to work:
+```bash
+# Install chromium
+sudo apt install chromium-browser
+
+# SSH with X11 forwarding
+ssh -X -i ~/.ssh/vm_key user@vm-ip
+
+# Now gh auth login will open browser on host
+```
 
 ## 📝 Startup Prompt for Next Session
 
-Read CLAUDE.md to understand our workflow, then verify dotfiles PR #73 CI status and merge if green.
+Read CLAUDE.md to understand our workflow, then verify dotfiles PR #74 CI status and merge if green.
 
-**Immediate priority**: Merge maxrantil/dotfiles#73 after CI passes
-**Context**: Fixed missing EDITOR/VISUAL/BROWSER/PATH that broke aliases in non-login shells
-**Reference docs**: maxrantil/vm-infra#115, SESSION_HANDOVER.md (this file)
+**Immediate priority**: Merge maxrantil/dotfiles#74 after CI passes
+**Context**: Fixed three VM issues - gruvbox errors, starship warnings, browser detection
+**Reference docs**: SESSION_HANDOVER.md (this file)
 **Ready state**: PR pushed, awaiting CI validation
 
-**Expected scope**: Merge PR, verify aliases work in VM, close both issues #114 and #115
+**Expected scope**: Merge PR, test in VM, update Ansible if needed
 
 ## 📚 Key Reference Documents
-- maxrantil/vm-infra#115 (this bug - EDITOR/PATH missing)
-- maxrantil/vm-infra#114 (original bug - ZDOTDIR missing)
-- maxrantil/dotfiles#73 (this fix PR)
-- maxrantil/dotfiles#72 (first fix PR - ZDOTDIR)
-- `.zshenv` (now contains ALL essential variables)
-- `.zprofile` (now only less critical variables)
+- maxrantil/dotfiles#74 (this PR)
+- init.vim (gruvbox disabled)
+- starship.toml (git_status fixed)
+- .zshenv (browser auto-detection)
