@@ -19,11 +19,13 @@ export EDITOR="nvim"
 export VISUAL="nvim"
 
 # BROWSER: Auto-detect available browser
-# Priority: chromium-browser (for VMs) > firefox > chromium > xdg-open
-if command -v chromium-browser >/dev/null 2>&1; then
-    export BROWSER="chromium-browser"
+# Priority: librewolf (VMs) > firefox > chromium-browser > chromium > xdg-open
+if command -v librewolf >/dev/null 2>&1; then
+    export BROWSER="librewolf"
 elif command -v firefox >/dev/null 2>&1; then
     export BROWSER="firefox"
+elif command -v chromium-browser >/dev/null 2>&1; then
+    export BROWSER="chromium-browser"
 elif command -v chromium >/dev/null 2>&1; then
     export BROWSER="chromium"
 elif command -v xdg-open >/dev/null 2>&1; then
