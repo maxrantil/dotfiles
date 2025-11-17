@@ -17,7 +17,18 @@ export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 # Must be here (not .zprofile) so non-login shells have them
 export EDITOR="nvim"
 export VISUAL="nvim"
-export BROWSER="firefox"
+
+# BROWSER: Auto-detect available browser
+# Priority: chromium-browser (for VMs) > firefox > chromium > xdg-open
+if command -v chromium-browser >/dev/null 2>&1; then
+    export BROWSER="chromium-browser"
+elif command -v firefox >/dev/null 2>&1; then
+    export BROWSER="firefox"
+elif command -v chromium >/dev/null 2>&1; then
+    export BROWSER="chromium"
+elif command -v xdg-open >/dev/null 2>&1; then
+    export BROWSER="xdg-open"
+fi
 
 # Add ~/.local/bin to PATH
 # Required for non-login shells to find user scripts

@@ -22,7 +22,7 @@ Plug 'tpope/vim-fugitive'              " Best git integration
 Plug 'tpope/vim-dispatch'              " Run commands asynchronously
 Plug 'airblade/vim-gitgutter'          " Git diff in gutter
 Plug 'mbbill/undotree'                 " Undo history visualizer
-Plug 'morhetz/gruvbox'                 " Gruvbox colorscheme
+" Plug 'morhetz/gruvbox'                 " Gruvbox colorscheme (disabled for minimal VM setup)
 Plug 'vim-airline/vim-airline'         " Status line
 Plug 'ap/vim-css-color'                " CSS color preview
 Plug 'preservim/nerdtree'              " File explorer
@@ -32,12 +32,10 @@ Plug 'junegunn/fzf.vim'                " FZF integration
 Plug 'dense-analysis/ale'              " Linting and fixing
 call plug#end()
 
-" Gruvbox colorscheme configuration
-let g:gruvbox_contrast_dark = 'medium'
-let g:gruvbox_contrast_light = 'hard'
-let g:gruvbox_italic = 1
+" Colorscheme configuration
 set background=dark
-colorscheme gruvbox
+" Using vim's default colorscheme for minimal VM setup
+" (gruvbox disabled - uncomment Plug line above and run :PlugInstall to enable)
 
 " Toggle background command
 command! ToggleBackground call ToggleBackgroundMode()
