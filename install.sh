@@ -97,6 +97,7 @@ link_file() {
 }
 
 # Link dotfiles
+link_file "$DOTFILES_DIR/.zshenv" "$HOME/.zshenv"
 link_file "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
 link_file "$DOTFILES_DIR/.zshrc" "$ZSH_CONFIG_DIR/.zshrc"
 link_file "$DOTFILES_DIR/.aliases" "$HOME/.aliases"
