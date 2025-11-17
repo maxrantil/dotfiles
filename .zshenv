@@ -12,3 +12,13 @@ export XDG_CACHE_HOME="$HOME/.cache"
 # Set ZDOTDIR so zsh looks for .zshrc in the right place
 # This is critical for XDG compliance - without it, zsh looks for .zshrc in $HOME
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
+
+# Default programs (needed for aliases like v=$EDITOR, e=$EDITOR)
+# Must be here (not .zprofile) so non-login shells have them
+export EDITOR="nvim"
+export VISUAL="nvim"
+export BROWSER="firefox"
+
+# Add ~/.local/bin to PATH
+# Required for non-login shells to find user scripts
+export PATH="$HOME/.local/bin:$PATH"
