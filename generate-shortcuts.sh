@@ -77,4 +77,8 @@ if [ -f "$DOTFILES_DIR/bm-files" ]; then
     done < "$DOTFILES_DIR/bm-files"
 fi
 
+# Set secure permissions (644 - owner rw, group r, world r)
+# This prevents safe_source in .zshrc from rejecting the file
+chmod 644 "$OUTPUT"
+
 echo "[SUCCESS] Generated shortcuts at $OUTPUT"
