@@ -1,19 +1,12 @@
+# shellcheck shell=bash
 # ABOUTME: Login shell configuration with XDG Base Directory and PATH setup
 # .zprofile - Runs once at login
 # Environment variables and PATH configuration
 
-# Add ~/.local/bin to PATH (including subdirectories)
-export PATH="$PATH:$HOME/.local/bin"
+# NOTE: Essential variables (EDITOR, VISUAL, BROWSER, PATH, XDG_*) are now in .zshenv
+# This ensures they're available in both login and non-login shells (e.g., SSH sessions)
 
-# Default programs
-export EDITOR="nvim"
-export VISUAL="nvim"
-export BROWSER="firefox"
-
-# XDG Base Directory specification
-export XDG_CONFIG_HOME="$HOME/.config"
-export XDG_DATA_HOME="$HOME/.local/share"
-export XDG_CACHE_HOME="$HOME/.cache"
+# Additional XDG Base Directory paths (less critical, can stay here)
 
 # Clean up home directory by setting XDG paths
 export LESSHISTFILE="-"
@@ -34,19 +27,27 @@ export PASSWORD_STORE_DIR="${XDG_DATA_HOME}/password-store"
 
 # Less colors for man pages
 export LESS=-R
-export LESS_TERMCAP_mb="$(printf '%b' '[1;31m')"
-export LESS_TERMCAP_md="$(printf '%b' '[1;36m')"
-export LESS_TERMCAP_me="$(printf '%b' '[0m')"
-export LESS_TERMCAP_so="$(printf '%b' '[01;44;33m')"
-export LESS_TERMCAP_se="$(printf '%b' '[0m')"
-export LESS_TERMCAP_us="$(printf '%b' '[1;32m')"
-export LESS_TERMCAP_ue="$(printf '%b' '[0m')"
+LESS_TERMCAP_mb="$(printf '%b' '[1;31m')"
+export LESS_TERMCAP_mb
+LESS_TERMCAP_md="$(printf '%b' '[1;36m')"
+export LESS_TERMCAP_md
+LESS_TERMCAP_me="$(printf '%b' '[0m')"
+export LESS_TERMCAP_me
+LESS_TERMCAP_so="$(printf '%b' '[01;44;33m')"
+export LESS_TERMCAP_so
+LESS_TERMCAP_se="$(printf '%b' '[0m')"
+export LESS_TERMCAP_se
+LESS_TERMCAP_us="$(printf '%b' '[1;32m')"
+export LESS_TERMCAP_us
+LESS_TERMCAP_ue="$(printf '%b' '[0m')"
+export LESS_TERMCAP_ue
 
 # FZF configuration
 export FZF_DEFAULT_OPTS="--layout=reverse --height 40%"
 
 # GPG fix
-export GPG_TTY=$(tty)
+GPG_TTY=$(tty)
+export GPG_TTY
 
 # Fix locale
 export LANG=en_US.UTF-8

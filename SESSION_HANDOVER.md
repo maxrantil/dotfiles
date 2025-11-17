@@ -1,64 +1,79 @@
-# Session Handoff: Dotfiles Fix for Issue maxrantil/vm-infra#114
+# Session Handoff: Dotfiles EDITOR/PATH Fix for Issue maxrantil/vm-infra#115
 
 **Date**: 2025-11-17
-**Issue**: maxrantil/vm-infra#114 - Missing .zshenv causes dotfiles to fail in non-login shells
-**PR**: maxrantil/dotfiles#72
-**Branch**: fix/issue-114-zshenv-missing
+**Issue**: maxrantil/vm-infra#115 - Missing EDITOR/VISUAL/PATH in .zshenv breaks aliases
+**PR**: maxrantil/dotfiles#73
+**Branch**: fix/issue-115-editor-path-zshenv
 
 ## ✅ Completed Work
 
-### Root Cause Analysis
-- Identified that `.zprofile` only runs for login shells, but SSH sessions are non-login
-- Without `.zprofile`, `ZDOTDIR` was never set
-- zsh looked for `.zshrc` in wrong location (`$HOME` instead of `~/.config/zsh/`)
-- `generate-shortcuts.sh` created files with 664 permissions, rejected by `safe_source`
+### Issue Discovery
+- User reported `v` alias not working in VM SSH sessions
+- Investigation revealed `EDITOR` variable was empty
+- Root cause: PR #72 moved `ZDOTDIR` to `.zshenv` but missed `EDITOR`, `VISUAL`, `BROWSER`, and `PATH`
 
 ### Changes Implemented
-1. **Created `.zshenv`**: Minimal file with XDG variables and ZDOTDIR (sourced for ALL shells)
-2. **Updated `install.sh`**: Added symlinking of `.zshenv` to `$HOME/.zshenv`
-3. **Fixed `generate-shortcuts.sh`**: Added `chmod 644` to ensure secure permissions on generated shortcutrc
-4. **Fixed formatting**: Applied shfmt formatting to install.sh pragma comments
+1. **Moved to `.zshenv`**:
+   - `EDITOR="nvim"` (needed for aliases like `v=$EDITOR`, `e=$EDITOR`)
+   - `VISUAL="nvim"`
+   - `BROWSER="firefox"`
+   - `PATH="$HOME/.local/bin:$PATH"` (needed to find user scripts)
+
+2. **Updated `.zprofile`**:
+   - Added shellcheck directive
+   - Fixed SC2155 warnings (separate declare/export for command substitutions)
+   - Added explanatory comment about variable locations
+   - Kept less critical variables (LESSHISTFILE, CARGO_HOME, GOPATH, etc.)
 
 ### Testing Results
-✅ Tested in VM provisioned with `--test-dotfiles ~/workspace/dotfiles`
-✅ All aliases functional: `cf`, `sc`, `h`, `doc`
-✅ `ZDOTDIR` correctly set to `/home/mr/.config/zsh` in all shell types
-✅ `shortcutrc` has correct permissions (644, not 664)
-✅ All pre-commit hooks passing locally
+✅ Verified in VM via SSH (non-login shell):
+- `EDITOR=nvim` (set correctly)
+- `v is an alias for nvim` (alias expands correctly)
+- `e is an alias for nvim` (alias expands correctly)
+- `v --version` opens nvim successfully
+✅ All pre-commit hooks passing
+✅ Shellcheck warnings fixed
 ✅ PR created and pushed to GitHub
 
 ## 🎯 Current Project State
 
 **Tests**: ✅ Manual testing complete in VM
-**Branch**: fix/issue-114-zshenv-missing
-**CI/CD**: 🔄 Running (PR #72)
-**Commits**: 3 commits (pragma comments, main fix, formatting)
+**Branch**: fix/issue-115-editor-path-zshenv
+**CI/CD**: 🔄 Running (PR #73)
+**Related Issues**:
+- #115 - This fix (EDITOR/PATH missing)
+- #114 - Original bug (ZDOTDIR missing)
+- #72 - First fix (ZDOTDIR added)
 
 ## 📋 Next Session Priorities
 
 **Immediate Next Steps:**
-1. Monitor CI/CD checks on PR #72
+1. Monitor CI/CD checks on PR #73
 2. Merge PR once all checks pass
-3. Test in fresh VM provision to verify fix works end-to-end
-4. Close maxrantil/vm-infra#114
+3. Test in fresh VM or update existing VM
+4. Close maxrantil/vm-infra#115
+5. Consider closing maxrantil/vm-infra#114 (fully resolved now)
 
-**Future Considerations:**
-- Consider adding automated tests for dotfiles installation
-- Document zsh sourcing order in README for future reference
+**Lessons Learned:**
+- When adding `.zshenv`, must move ALL essential variables from `.zprofile`
+- Essential = anything used in aliases or needed by non-login shells
+- Test both login and non-login shells when making env variable changes
 
 ## 📝 Startup Prompt for Next Session
 
-Read CLAUDE.md to understand our workflow, then verify dotfiles PR #72 CI status and merge if green.
+Read CLAUDE.md to understand our workflow, then verify dotfiles PR #73 CI status and merge if green.
 
-**Immediate priority**: Merge maxrantil/dotfiles#72 after CI passes
-**Context**: Fixed missing .zshenv bug that broke aliases in non-login shells
-**Reference docs**: maxrantil/vm-infra#114, SESSION_HANDOVER.md (this file)
+**Immediate priority**: Merge maxrantil/dotfiles#73 after CI passes
+**Context**: Fixed missing EDITOR/VISUAL/BROWSER/PATH that broke aliases in non-login shells
+**Reference docs**: maxrantil/vm-infra#115, SESSION_HANDOVER.md (this file)
 **Ready state**: PR pushed, awaiting CI validation
 
-**Expected scope**: Merge PR, verify in fresh VM, close issue #114
+**Expected scope**: Merge PR, verify aliases work in VM, close both issues #114 and #115
 
 ## 📚 Key Reference Documents
-- maxrantil/vm-infra#114 (bug report)
-- maxrantil/dotfiles#72 (fix PR)
-- `.zshenv` (new file with XDG/ZDOTDIR setup)
-- `install.sh` (updated with .zshenv symlinking)
+- maxrantil/vm-infra#115 (this bug - EDITOR/PATH missing)
+- maxrantil/vm-infra#114 (original bug - ZDOTDIR missing)
+- maxrantil/dotfiles#73 (this fix PR)
+- maxrantil/dotfiles#72 (first fix PR - ZDOTDIR)
+- `.zshenv` (now contains ALL essential variables)
+- `.zprofile` (now only less critical variables)
