@@ -3,13 +3,32 @@
 
 format = """
 [┌───────────────────>](bold green)
-[│](bold green)$directory$git_branch$git_status
+[│](bold green)$username$hostname$directory$git_branch$git_status
 [└─>](bold green) """
 
 [directory]
 style = "blue bold"
 truncation_length = 3
 truncate_to_repo = true
+
+# ===================================
+# USERNAME - Always show for VM clarity
+# ===================================
+[username]
+show_always = true                    # Show even when not SSH'd in
+format = "[$user]($style)"           # Format: username only
+style_user = "bold yellow"           # Yellow for regular users
+style_root = "bold red"              # Red for root (warning!)
+disabled = false
+
+# ===================================
+# HOSTNAME - Always show for VM clarity
+# ===================================
+[hostname]
+ssh_only = false                     # Show even when not SSH'd in
+format = "[@$hostname](bold green) " # Format: @hostname with space
+trim_at = "."                        # Remove domain suffix
+disabled = false
 
 [git_branch]
 symbol = " "
