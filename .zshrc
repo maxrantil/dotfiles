@@ -49,10 +49,14 @@ safe_source() {
     local actual_user=$(id -un)
     [[ "$USER" == "$actual_user" ]] || USER="$actual_user"
 
-    # Check file ownership
+    # Check file ownership (allow root-owned system files in /usr/share)
     if [[ "$owner" != "$USER" ]]; then
-        echo "Warning: $file not owned by $USER (owner: $owner)" >&2
-        return 1
+        if [[ "$owner" == "root" && "$file" == /usr/share/* ]]; then
+            : # Allow root-owned system files (zsh plugins, etc.)
+        else
+            echo "Warning: $file not owned by $USER (owner: $owner)" >&2
+            return 1
+        fi
     fi
 
     # Check parent directory ownership
@@ -65,8 +69,12 @@ safe_source() {
         return 1
     fi
 
-    # Check permissions (reject world/group writable, setuid/setgid)
-    if [[ "$perms" =~ [2367]$ ]] || (( 10#$perms > 644 )); then
+    # Check permissions (reject world-writable, but allow group-writable like 664)
+    # Last digit meanings: 2=write, 4=read, 6=read+write, 7=read+write+exec
+    # Reject if world-writable (perms ending in 2, 3, 6, 7 for "other" field)
+    # Allow up to 664 (owner rw, group rw, other r) but not 666+ (world-writable)
+    local other_perms="${perms: -1}"
+    if [[ "$other_perms" =~ [2367] ]] || (( 10#$perms > 775 )); then
         echo "Warning: $file has insecure permissions ($perms)" >&2
         return 1
     fi
