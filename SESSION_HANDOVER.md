@@ -1,109 +1,74 @@
-# Session Handoff: Starship Always-Show Username/Hostname Feature
+# Session Handoff: Issue #76 - Fix safe_source Permission and Ownership Checks
 
-**Date**: 2025-11-18
-**PR**: maxrantil/dotfiles#75
-**Branch**: feat/starship-always-show-username
+**Date**: 2025-11-23
+**Issue**: #76
+**PR**: #77
+**Branch**: fix/issue-76-safe-source-permissions
 
 ## ✅ Completed Work
 
-### Feature Implemented
-**Starship Prompt Enhancement**: Configured starship to always display `username@hostname` in the prompt (not just during SSH sessions).
+### Bug Fixed
+**safe_source function in .zshrc**: Fixed overly restrictive security checks that prevented aliases and zsh plugins from loading on freshly provisioned VMs.
+
+### Root Causes Identified
+1. **Permission check too strict**: Rejected files with permission `664` (group-writable) because `664 > 644`, even though 664 is a common and safe permission for dotfiles
+2. **Ownership check too strict**: Rejected root-owned system files in `/usr/share/`, breaking apt-installed zsh plugins (syntax-highlighting, autosuggestions)
 
 ### Changes Made
-1. **starship.toml**:
-   - Added `[username]` section with `show_always = true`
-     - Yellow for regular users
-     - Red for root (warning indicator)
-   - Added `[hostname]` section with `ssh_only = false`
-     - Green color with `@` prefix
-     - Trim domain suffix (`.local`)
-   - Updated format string to include `$username$hostname`
+1. **Permission check** (line 72-80):
+   - Old: Rejected anything > 644 or ending in 2,3,6,7
+   - New: Only rejects world-writable (last digit 2,3,6,7) or > 775
+   - Now accepts: 644, 664, 755, 775
+   - Still rejects: 666, 777, 646, 776 (world-writable)
 
-### Context & Integration
-This change complements the vm-infra configurable username feature:
-- vm-infra Issue: maxrantil/vm-infra#117
-- vm-infra PR: maxrantil/vm-infra#118
-- VMs now provisioned with configurable usernames and hostnames
-- Prompt shows `developer@work-vm-1` or `testuser@test-vm-2` for instant context
+2. **Ownership check** (line 52-60):
+   - Old: Required file to be owned by current user
+   - New: Also allows root-owned files in `/usr/share/*`
+   - Enables system-installed zsh plugins to load
 
-### Before/After
-**Before**:
+### Symptoms Fixed
 ```
-~/projects
-❯
+Warning: /home/user/.dotfiles/.aliases has insecure permissions (664)
+Warning: /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh not owned by user (owner: root)
 ```
 
-**After**:
-```
-┌───────────────────>
-│developer@work-vm-1~/projects main
-└─>❯
-```
-
-### Benefits
-- **Multi-VM Clarity**: Instantly see which VM you're in
-- **Security**: Root user shown in red (immediate warning)
-- **Universal**: Works in all contexts (SSH, console, tmux)
-
-### Agent Validation Status
-- ✅ **ux-accessibility-i18n-agent**: APPROVED (4.5/5)
-  - Excellent UX for multi-VM workflows
-  - Color choices appropriate and accessible
-  - Screen reader compatible
-  - Recommends contrast verification testing (not blocking)
-- ✅ **code-quality-analyzer**: APPROVED (4.6/5)
-  - Valid starship configuration
-  - Excellent documentation
-  - Negligible performance impact
-  - Minor cosmetic improvements suggested (optional)
-- ✅ **documentation-knowledge-manager**: Session handoff now complete
+Result: `l` alias (and all other aliases) now work correctly.
 
 ## 🎯 Current Project State
 
 **Tests**: ✅ All pre-commit hooks passing
-**Branch**: feat/starship-always-show-username
-**CI/CD**: 🔄 Running (PR #75) - session handoff doc now updated
+**Branch**: fix/issue-76-safe-source-permissions
+**CI/CD**: 🔄 Running (PR #77)
 **Status**: Ready for merge after CI passes
 
 ### File Changes
-- **Modified**: `starship.toml` (+20 lines, -1 line)
-  - Added [username] section
-  - Added [hostname] section
-  - Updated format string
+- **Modified**: `.zshrc` (+13 lines, -5 lines)
+  - Updated ownership check to allow root-owned `/usr/share/*` files
+  - Updated permission check to allow group-writable (664) but reject world-writable
 
 ## 📋 Next Session Priorities
 
 **Immediate Next Steps:**
-1. Merge PR #75 after CI passes (all checks should be green now)
-2. Test in VM to verify prompt display with configurable usernames
-3. Validate integration with vm-infra PR #118 deployment
-4. Monitor for any prompt performance impact
-
-**Optional Enhancements** (from code-quality-analyzer):
-- Remove redundant `disabled = false` lines (cosmetic)
-- Add test coverage for root user styling
-- Add test coverage for hostname domain trimming
-- Update README.md to document prompt behavior
+1. Merge PR #77 after CI passes
+2. Test on VM to verify aliases and zsh plugins load correctly
+3. Close Issue #76
 
 **Future Considerations:**
-- Test with various username/hostname combinations in vm-infra
-- Evaluate if additional starship customizations needed for VM workflows
-- Consider contrast verification testing for accessibility
+- Consider if other system directories should be allowlisted (e.g., `/etc/`)
+- Monitor for any security implications of relaxed checks
 
 ## 📝 Startup Prompt for Next Session
 
-Read CLAUDE.md to understand our workflow, then merge dotfiles PR #75 (starship always-show username/hostname feature) after CI validation.
+Read CLAUDE.md to understand our workflow, then merge dotfiles PR #77 (safe_source fix) after CI validation.
 
-**Immediate priority**: Merge maxrantil/dotfiles#75 after CI passes
-**Context**: Starship now always displays username@hostname for multi-VM clarity
-**Reference docs**: PR #75 description, vm-infra#117, vm-infra#118, SESSION_HANDOVER.md
-**Ready state**: All tests passing, simple config change, agent-validated
+**Immediate priority**: Merge maxrantil/dotfiles#77 after CI passes
+**Context**: Fixed safe_source rejecting 664 permissions and root-owned system files
+**Reference docs**: Issue #76, PR #77, SESSION_HANDOVER.md
+**Ready state**: All tests passing, simple security fix, locally validated
 
-**Expected scope**: Merge PR, test prompt display in VM, validate vm-infra integration works as expected
+**Expected scope**: Merge PR, test aliases work on VM without chmod workaround
 
 ## 📚 Key Reference Documents
-- maxrantil/dotfiles#75 (this PR - starship username/hostname always-show)
-- maxrantil/vm-infra#117 (issue - configurable VM usernames)
-- maxrantil/vm-infra#118 (PR - implementation of configurable usernames)
-- `starship.toml:14-31` (username/hostname configuration added)
-- `STARSHIP_CONFIG_NOTE.md` (in vm-infra repo - implementation guide)
+- maxrantil/dotfiles#76 (issue - safe_source rejects valid permissions)
+- maxrantil/dotfiles#77 (PR - fix implementation)
+- `.zshrc:52-80` (safe_source function with fixes)
