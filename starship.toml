@@ -37,16 +37,16 @@ style = "bold purple"
 [git_status]
 style = "red bold"
 # Accessible text-based indicators (emojis preserved as comments below)
-conflicted = "[CONFLICT${count}] "
-ahead = "[↑${count}]"
-behind = "[↓${count}]"
-diverged = "[↕↑${ahead_count}↓${behind_count}]"
-untracked = "[?${count}]"
-stashed = "[STASH${count}]"
-modified = "[M${count}]"
-staged = '[+${count}](green)'
-renamed = "[R${count}]"
-deleted = "[-${count}]"
+conflicted = "[CONFLICT$count] "
+ahead = "[↑$count]"
+behind = "[↓$count]"
+diverged = "[↕↑$ahead_count↓$behind_count]"
+untracked = "[?$count]"
+stashed = "[STASH$count]"
+modified = "[M$count]"
+staged = '[+$count](green)'
+renamed = "[R$count]"
+deleted = "[-$count]"
 # Original emoji versions (uncomment to restore):
 # conflicted = "⚔️ "
 # ahead = "⇡${count}"
