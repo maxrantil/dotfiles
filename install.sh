@@ -167,6 +167,15 @@ while IFS=$'\t' read -r rel_source target; do
     link_file "$DOTFILES_DIR/$rel_source" "$target"
 done < <(dotfiles_links "$ZSH_CONFIG_DIR")
 
+# Remove links from older versions that point into a dotfiles checkout
+while IFS=$'\t' read -r rel_source target; do
+    if [ -L "$target" ] && [ "$(basename "$(readlink "$target")")" = "$rel_source" ] &&
+        [ -f "$(dirname "$(readlink "$target")")/install.sh" ]; then
+        run rm "$target"
+        echo "[CLEANUP] Removed obsolete link ${target#"$HOME"/}"
+    fi
+done < <(dotfiles_legacy_links "$ZSH_CONFIG_DIR")
+
 if [ -x "$DOTFILES_DIR/generate-shortcuts.sh" ]; then
     echo "Generating bookmark shortcuts"
     run "$DOTFILES_DIR/generate-shortcuts.sh"

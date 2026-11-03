@@ -106,6 +106,17 @@ install_q --bogus
 check "install rejects unknown flag" test $? -ne 0
 cleanup
 
+echo "Test 8: obsolete ~/.zprofile link from older installs is removed"
+new_home
+ln -s "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
+install_q
+check "legacy ~/.zprofile link removed" test ! -e "$HOME/.zprofile"
+check ".zprofile linked in ZDOTDIR" test -L "$HOME/.config/zsh/.zprofile"
+echo "keep" > "$HOME/.zprofile"
+install_q
+check "a real ~/.zprofile is never removed" test "$(cat "$HOME/.zprofile")" = "keep"
+cleanup
+
 echo ""
 echo "Passed: $PASSED  Failed: $FAILED"
 [ "$FAILED" -eq 0 ]

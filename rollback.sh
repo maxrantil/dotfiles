@@ -80,6 +80,10 @@ while IFS=$'\t' read -r _src target; do
         FLAT_TARGET["$name"]="$target"
     fi
 done < <(dotfiles_links "$ZSH_CONFIG_DIR")
+# Also clean up links an older install may have left behind
+while IFS=$'\t' read -r _src target; do
+    MANAGED_TARGETS+=("$target")
+done < <(dotfiles_legacy_links "$ZSH_CONFIG_DIR")
 
 # Work out where a backed-up item goes
 restore_target_for() {
@@ -120,6 +124,11 @@ done
 echo ""
 
 if [ "$AUTO_YES" = false ]; then
+    # Never block waiting for an answer nobody can give (scripts, CI, pipes)
+    if [ ! -t 0 ]; then
+        echo "ERROR: No terminal to confirm on. Re-run with -y to roll back non-interactively." >&2
+        exit 1
+    fi
     echo "WARNING: This will:"
     echo "  1. Remove current dotfiles symlinks"
     echo "  2. Restore files from backup"

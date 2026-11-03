@@ -12,7 +12,6 @@
 export LESSHISTFILE="-"
 export WGETRC="${XDG_CONFIG_HOME}/wget/wgetrc"
 export INPUTRC="${XDG_CONFIG_HOME}/shell/inputrc"
-export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export CARGO_HOME="${XDG_DATA_HOME}/cargo"
 export GOPATH="${XDG_DATA_HOME}/go"
 export ANSIBLE_CONFIG="${XDG_CONFIG_HOME}/ansible/ansible.cfg"
@@ -25,28 +24,21 @@ export PASSWORD_STORE_DIR="${XDG_DATA_HOME}/password-store"
 # Add go bin to PATH if it exists
 [ -d "${GOPATH}/bin" ] && export PATH="$PATH:${GOPATH}/bin"
 
-# Less colors for man pages
+# Less colors for man pages (ANSI-C quoting: real escape bytes, no subshells)
 export LESS=-R
-LESS_TERMCAP_mb="$(printf '%b' '[1;31m')"
-export LESS_TERMCAP_mb
-LESS_TERMCAP_md="$(printf '%b' '[1;36m')"
-export LESS_TERMCAP_md
-LESS_TERMCAP_me="$(printf '%b' '[0m')"
-export LESS_TERMCAP_me
-LESS_TERMCAP_so="$(printf '%b' '[01;44;33m')"
-export LESS_TERMCAP_so
-LESS_TERMCAP_se="$(printf '%b' '[0m')"
-export LESS_TERMCAP_se
-LESS_TERMCAP_us="$(printf '%b' '[1;32m')"
-export LESS_TERMCAP_us
-LESS_TERMCAP_ue="$(printf '%b' '[0m')"
-export LESS_TERMCAP_ue
+export LESS_TERMCAP_mb=$'\e[1;31m'
+export LESS_TERMCAP_md=$'\e[1;36m'
+export LESS_TERMCAP_me=$'\e[0m'
+export LESS_TERMCAP_so=$'\e[01;44;33m'
+export LESS_TERMCAP_se=$'\e[0m'
+export LESS_TERMCAP_us=$'\e[1;32m'
+export LESS_TERMCAP_ue=$'\e[0m'
 
 # FZF configuration
 export FZF_DEFAULT_OPTS="--layout=reverse --height 40%"
 
-# GPG fix
-GPG_TTY=$(tty)
+# GPG fix (zsh sets $TTY; fall back to tty(1) elsewhere)
+GPG_TTY="${TTY:-$(tty)}"
 export GPG_TTY
 
 # Fix locale

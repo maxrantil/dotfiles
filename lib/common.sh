@@ -50,7 +50,7 @@ dotfiles_links() {
     local zdot="$1"
     printf '%s\t%s\n' \
         .zshenv "$HOME/.zshenv" \
-        .zprofile "$HOME/.zprofile" \
+        .zprofile "$zdot/.zprofile" \
         .zshrc "$zdot/.zshrc" \
         .aliases "$HOME/.aliases" \
         inputrc "$HOME/.config/shell/inputrc" \
@@ -58,6 +58,16 @@ dotfiles_links() {
         .gitconfig "$HOME/.gitconfig" \
         .tmux.conf "$HOME/.tmux.conf" \
         starship.toml "$HOME/.config/starship.toml"
+}
+
+# Paths older versions linked that are no longer used. With ZDOTDIR set (.zshenv), zsh
+# reads $ZDOTDIR/.zprofile and never ~/.zprofile, so that link was silently ignored.
+# Usage: dotfiles_legacy_links <zsh_config_dir>
+dotfiles_legacy_links() {
+    local zdot="$1"
+    if [ "$zdot" != "$HOME" ]; then
+        printf '%s\t%s\n' .zprofile "$HOME/.zprofile"
+    fi
 }
 
 # Backup directory naming shared by install and rollback
