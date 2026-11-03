@@ -2,10 +2,10 @@
 # Common shell aliases for Ubuntu servers
 
 # Use neovim for vim if present
-[ -x "$(command -v nvim)" ] && alias vim="nvim" vimdiff="nvim -d"
+command -v nvim > /dev/null 2>&1 && alias vim="nvim" vimdiff="nvim -d"
 
 # Use bat for cat if available (better syntax highlighting)
-[ -x "$(command -v bat)" ] && alias c="bat" || alias c="cat"
+if command -v bat > /dev/null 2>&1; then alias c="bat"; else alias c="cat"; fi
 
 # sudo not required for common system commands
 for cmd in mount umount systemctl updatedb shutdown poweroff reboot docker; do
@@ -49,7 +49,8 @@ alias h="history"
 alias j="jobs -l"
 alias pk="pkill -9"
 alias sdn="shutdown -h now"
-alias ports="netstat -tulanp"
+# ss replaces the deprecated netstat (net-tools is not installed by default anymore)
+if command -v ss > /dev/null 2>&1; then alias ports="ss -tulnp"; else alias ports="netstat -tulanp"; fi
 alias psg="ps aux | grep -v grep | grep -i -e VSZ -e"
 
 # Tmux shortcuts

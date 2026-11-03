@@ -33,5 +33,8 @@ elif command -v xdg-open >/dev/null 2>&1; then
 fi
 
 # Add ~/.local/bin to PATH
-# Required for non-login shells to find user scripts
-export PATH="$HOME/.local/bin:$PATH"
+# Required for non-login shells to find user scripts.
+# typeset -U keeps PATH free of duplicates when shells are nested (tmux, subshells)
+typeset -U path PATH
+path=("$HOME/.local/bin" $path)
+export PATH
