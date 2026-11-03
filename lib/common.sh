@@ -8,7 +8,9 @@
 # Usage: resolve_zdotdir <dotfiles_dir>   -> prints directory
 resolve_zdotdir() {
     local dotfiles_dir="$1" src value xdg_config
-    xdg_config="${XDG_CONFIG_HOME:-$HOME/.config}"
+    # .zshenv unconditionally sets XDG_CONFIG_HOME="$HOME/.config", so that is what zsh
+    # will use, whatever the installing shell happens to have (CI runners set their own)
+    xdg_config="$HOME/.config"
 
     for src in "$dotfiles_dir/.zshenv" "$dotfiles_dir/.zprofile"; do
         [ -f "$src" ] || continue

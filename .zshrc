@@ -174,12 +174,19 @@ bindkey -s '^o' '^ulfcd\n'
 # fzf-based cd to directory containing selected file - Ctrl+F
 bindkey -s '^f' '^ucd "$(dirname "$(fzf)")"\n'
 
-# FZF integration (if installed)
-if [ -f /usr/share/fzf/key-bindings.zsh ]; then
-    safe_source /usr/share/fzf/key-bindings.zsh
-    safe_source /usr/share/fzf/completion.zsh
-elif [ -f ~/.fzf.zsh ]; then
-    safe_source ~/.fzf.zsh
+# FZF integration (if installed). Key bindings need the line editor, which only
+# exists on a terminal; loading them without one prints "can't change option: zle".
+if [[ -o zle && -t 0 ]]; then
+    if [[ -f /usr/share/fzf/key-bindings.zsh ]]; then                 # Arch
+        safe_source /usr/share/fzf/key-bindings.zsh
+        safe_source /usr/share/fzf/completion.zsh
+    elif [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then  # Debian/Ubuntu
+        safe_source /usr/share/doc/fzf/examples/key-bindings.zsh
+        [[ -f /usr/share/zsh/vendor-completions/_fzf ]] || \
+            safe_source /usr/share/doc/fzf/examples/completion.zsh
+    elif [[ -f ~/.fzf.zsh ]]; then
+        safe_source ~/.fzf.zsh
+    fi
 fi
 
 # NVM (Node Version Manager) lazy loading

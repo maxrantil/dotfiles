@@ -112,9 +112,18 @@ ln -s "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
 install_q
 check "legacy ~/.zprofile link removed" test ! -e "$HOME/.zprofile"
 check ".zprofile linked in ZDOTDIR" test -L "$HOME/.config/zsh/.zprofile"
+# Never write through a leftover link: that would modify the repo's own file
+rm -f "$HOME/.zprofile"
 echo "keep" > "$HOME/.zprofile"
 install_q
 check "a real ~/.zprofile is never removed" test "$(cat "$HOME/.zprofile")" = "keep"
+cleanup
+
+echo "Test 9: an XDG_CONFIG_HOME outside \$HOME does not break install"
+new_home
+XDG_CONFIG_HOME=/nonexistent/.config install_q
+check "install succeeds" test $? -eq 0
+check ".zshrc linked in \$HOME/.config/zsh (what .zshenv sets)" test -L "$HOME/.config/zsh/.zshrc"
 cleanup
 
 echo ""
