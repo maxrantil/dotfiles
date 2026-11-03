@@ -5,6 +5,10 @@ on:
   pull_request:
     branches: [master]
 
+# Least privilege: the called workflow only reads git history
+permissions:
+  contents: read
+
 jobs:
   run-pre-commit:
     uses: maxrantil/.github/.github/workflows/pre-commit-check-reusable.yml@master

@@ -1,0 +1,24 @@
+# ABOUTME: Docker test environment for dotfiles validation (fresh Arch Linux machine)
+FROM archlinux:latest
+
+ENV TERM=xterm-256color
+
+# Core dependencies from the official repos (starship is packaged on Arch)
+RUN pacman -Syu --noconfirm --needed \
+    git \
+    zsh \
+    tmux \
+    neovim \
+    fzf \
+    starship \
+    && pacman -Scc --noconfirm
+
+RUN useradd -m -s /bin/zsh testuser
+USER testuser
+WORKDIR /home/testuser
+
+COPY --chown=testuser:testuser . /home/testuser/.dotfiles
+
+RUN /home/testuser/.dotfiles/install.sh
+
+CMD ["zsh", "-i"]

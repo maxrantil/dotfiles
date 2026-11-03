@@ -1,4 +1,4 @@
-# ABOUTME: Shell quality checks for .sh scripts only (excludes zsh config files)
+# ABOUTME: Shell quality checks, test suites and fresh-machine Docker install tests
 name: Shell Quality Checks
 
 on:
@@ -7,79 +7,127 @@ on:
     paths:
       - '**.sh'
       - '.github/workflows/shell-quality.yml'
-      - 'install.sh'
+      - 'lib/**'
+      - 'tests/**'
+      - '.zshenv'
       - '.zshrc'
       - '.zprofile'
       - '.aliases'
+      - 'distro/**'
       - '.tmux.conf'
       - '.gitconfig'
       - 'init.vim'
       - 'starship.toml'
       - 'inputrc'
+      - 'bm-dirs'
+      - 'bm-files'
 
+# Least privilege: nothing in this workflow needs to write
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Third-party actions are pinned to commit SHAs (tags can be moved); the comment
+# records the version. Bump both together.
 jobs:
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Run ShellCheck on .sh files only
+      - name: Run ShellCheck on .sh files
         run: |
-          echo "Running ShellCheck on .sh files..."
-          find . -name "*.sh" -type f -print0 | xargs -0 shellcheck -S warning
+          shellcheck --version
+          find . -name "*.sh" -type f -not -path './.git/*' -print0 | xargs -0 shellcheck -S warning
 
   shfmt:
     name: Shell Format Check
     runs-on: ubuntu-latest
+    env:
+      SHFMT_VERSION: v3.14.1
+      SHFMT_SHA256: 76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Cache shfmt binary
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: cache-shfmt
         with:
           path: ~/.local/bin/shfmt
-          key: shfmt-v3.7.0-${{ runner.os }}
+          key: shfmt-${{ env.SHFMT_VERSION }}-${{ env.SHFMT_SHA256 }}-${{ runner.os }}
 
       - name: Install shfmt
         if: steps.cache-shfmt.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/.local/bin
-          wget -O ~/.local/bin/shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
+          curl -fsSLo ~/.local/bin/shfmt \
+            "https://github.com/mvdan/sh/releases/download/${SHFMT_VERSION}/shfmt_${SHFMT_VERSION}_linux_amd64"
           chmod +x ~/.local/bin/shfmt
 
-      - name: Add shfmt to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Verify shfmt checksum
+        run: echo "${SHFMT_SHA256}  $HOME/.local/bin/shfmt" | sha256sum -c -
 
-      - name: Check formatting on .sh files only
+      - name: Check formatting on .sh files
         run: |
-          echo "Running shfmt on .sh files..."
-          find . -name "*.sh" -type f -print0 | xargs -0 shfmt -d -i 4 -ci -sr
+          find . -name "*.sh" -type f -not -path './.git/*' -print0 \
+            | xargs -0 ~/.local/bin/shfmt -d -i 4 -ci -sr
 
   installation-test:
     name: Test Installation Script
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install zsh
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
 
       - name: Create temporary home directory
         run: |
           TEMP_HOME=$(mktemp -d)
-          echo "TEMP_HOME=$TEMP_HOME" >> $GITHUB_ENV
-          echo "DIAGNOSTICS_DIR=$TEMP_HOME/diagnostics" >> $GITHUB_ENV
+          echo "TEMP_HOME=$TEMP_HOME" >> "$GITHUB_ENV"
+          echo "DIAGNOSTICS_DIR=$TEMP_HOME/diagnostics" >> "$GITHUB_ENV"
 
-      - name: Run comprehensive installation tests
+      - name: Installation tests
         run: ./tests/installation-test.sh "$TEMP_HOME" "$GITHUB_WORKSPACE"
+
+      - name: Install/rollback round-trip tests
+        run: ./tests/roundtrip-test.sh "$GITHUB_WORKSPACE"
+
+      - name: Rollback tests
+        run: ./tests/rollback-test.sh < /dev/null
+
+      - name: zsh config tests (safe_source, env, startup budget)
+        run: ./tests/zsh-config-test.sh "$GITHUB_WORKSPACE"
 
       - name: Upload diagnostic artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: installation-test-diagnostics
           path: ${{ env.DIAGNOSTICS_DIR }}
           retention-days: 7
+
+  docker-test:
+    name: Fresh Machine Install (${{ matrix.distro }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [ubuntu, arch]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build image, install, run suites inside
+        run: ./tests/docker-test.sh --distro "${{ matrix.distro }}"
