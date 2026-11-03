@@ -1,10 +1,11 @@
 # Dotfiles
 
-Minimal symlink-based dotfiles for SSH development. XDG-compliant, distro-aware, <100ms startup.
+Minimal symlink-based dotfiles for SSH development. XDG-compliant, distro-aware, ~10ms shell startup.
 
 ## What's Inside
 
 **Shell Environment:**
+- `.zshenv` - Environment for every zsh (XDG paths, ZDOTDIR, PATH, EDITOR)
 - `.zshrc` - Zsh config with vi mode, starship prompt, fzf integration
 - `.zprofile` - Zsh profile (login shell setup)
 - `.aliases` - Shell aliases with distro detection (Debian/Arch)
@@ -20,20 +21,24 @@ Minimal symlink-based dotfiles for SSH development. XDG-compliant, distro-aware,
 
 **Bookmark System:**
 - `bm-dirs` - Directory bookmarks (cf → ~/.config)
-- `bm-files` - File bookmarks (ez → ~/.zshrc)
+- `bm-files` - File bookmarks (cfz → $ZDOTDIR/.zshrc)
 - `generate-shortcuts.sh` - Auto-generate shortcuts from bookmarks
 
 **Management:**
-- `install.sh` - Symlink installer with automatic backups
-- `rollback.sh` - Restore from backup
-- `tests/` - Docker-based automated testing
+- `install.sh` - Symlink installer with automatic backups (safe to re-run, `--dry-run`)
+- `rollback.sh` - Restore files from the latest backup to their original paths
+- `lib/common.sh` - Link list shared by install and rollback
+- `tests/` - Install, rollback and zsh config suites, plus Docker fresh-machine tests
 
 ## Quick Install
 
+Needs `git` and `zsh` (plus optionally `neovim tmux fzf starship`):
+
 ```bash
-git clone https://github.com/maxrantil/dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
-./install.sh
+git clone https://github.com/maxrantil/dotfiles.git ~/.dotfiles && ~/.dotfiles/install.sh
+chsh -s "$(command -v zsh)"   # then log out and back in
+
+# Preview first if you like: ~/.dotfiles/install.sh --dry-run
 
 # Set your git identity
 cp .gitconfig.local.example ~/.gitconfig.local
@@ -44,7 +49,7 @@ vim ~/.gitconfig.local  # Add name, email, GPG key
 
 ```bash
 # Edit dotfiles (auto-tracked via symlinks)
-ez              # Edit .zshrc
+cfz             # Edit .zshrc
 vim ~/.dotfiles/.aliases
 git -C ~/.dotfiles add . && git -C ~/.dotfiles commit -m "update" && git -C ~/.dotfiles push
 
@@ -57,31 +62,35 @@ ts project      # New session
 ta project      # Re-attach
 
 # Rollback if needed
-./rollback.sh   # Interactive restore from backup
+./rollback.sh   # Interactive restore from backup (--dry-run to preview, -y in scripts)
 ```
 
 ## Testing
 
 ```bash
-# Quick Docker test (30s)
-./tests/docker-test.sh
+# Local suites (need zsh)
+./tests/installation-test.sh
+./tests/roundtrip-test.sh      # install -> rollback restores files in place
+./tests/rollback-test.sh
+./tests/zsh-config-test.sh     # safe_source checks, env hygiene, startup budget
 
-# Interactive debugging
-./tests/docker-test.sh --interactive
+# Fresh machine in Docker (Ubuntu 24.04 or Arch), as a non-root user
+./tests/docker-test.sh --distro ubuntu
+./tests/docker-test.sh --distro arch --interactive
 
 # VM integration test (5min, from vm-infra repo)
 ./provision-vm.sh test-vm --test-dotfiles ../dotfiles
 ```
 
-**CI automatically runs:** ShellCheck, shfmt, installation tests on every PR.
+**CI automatically runs:** ShellCheck, shfmt, all test suites, and the Docker fresh-machine install on Ubuntu and Arch on every PR that touches shell files.
 
 ## Key Features
 
-- **Fast** - <100ms shell startup with prompt caching
-- **Secure** - Pre-commit hooks (shellcheck, shfmt, gitleaks)
+- **Fast** - ~10ms shell startup: no external processes at startup, cached prompt and completions
+- **Secure** - Files are only sourced after ownership/permission checks; pre-commit hooks (shellcheck, gitleaks); CI actions pinned to commit SHAs
 - **Vi everywhere** - Consistent keybindings (zsh/tmux/vim)
 - **Tmux ready** - Sessions persist through SSH disconnects
-- **XDG compliant** - .zshrc lives in $XDG_CONFIG_HOME/zsh
+- **XDG compliant** - .zshrc and .zprofile live in $XDG_CONFIG_HOME/zsh (ZDOTDIR)
 
 ## Troubleshooting
 
