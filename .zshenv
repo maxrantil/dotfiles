@@ -13,6 +13,11 @@ export XDG_CACHE_HOME="$HOME/.cache"
 # This is critical for XDG compliance - without it, zsh looks for .zshrc in $HOME
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 
+# Debian/Ubuntu's /etc/zsh/zshrc runs its own compinit (full audit, prompts on insecure
+# dirs) before ours unless this is set. .zshrc does a cached compinit itself.
+# shellcheck disable=SC2034  # read by /etc/zsh/zshrc
+skip_global_compinit=1
+
 # Default programs (needed for aliases like v=$EDITOR, e=$EDITOR)
 # Must be here (not .zprofile) so non-login shells have them
 export EDITOR="nvim"
