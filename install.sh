@@ -1,43 +1,107 @@
 #!/bin/bash
 # ABOUTME: Symlink-based dotfiles installer with automatic backup and XDG compliance
-# Simple dotfiles installer - creates symlinks from home to repo
+# Creates symlinks from $HOME to this repo. Safe to re-run: correct links are left alone,
+# anything else at a target path is moved into a timestamped backup (path preserved).
 
-set -e
+set -euo pipefail
+umask 022
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKUP_DIR="$HOME/.dotfiles_backup_$(date +%Y%m%d_%H%M%S)"
+# shellcheck source=lib/common.sh
+. "$DOTFILES_DIR/lib/common.sh"
+
+DRY_RUN=false
+
+usage() {
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Symlink dotfiles from $DOTFILES_DIR into \$HOME.
+
+Options:
+  -n, --dry-run   Show what would change without touching anything
+  -h, --help      Show this help
+
+Existing files are moved to ~/${BACKUP_PREFIX}<timestamp>/ (restore with ./rollback.sh).
+EOF
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -n | --dry-run) DRY_RUN=true ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "[ERROR] Unknown option: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+    shift
+done
+
+# Run a command, or just describe it in dry-run mode
+run() {
+    if [ "$DRY_RUN" = true ]; then
+        echo "  [DRY RUN] $*"
+    else
+        "$@"
+    fi
+}
+
+on_error() {
+    echo "[ERROR] Installation failed at line $1. Nothing after this point was changed." >&2
+    if [ -n "${BACKUP_DIR:-}" ] && [ -d "$BACKUP_DIR" ]; then
+        echo "        Files moved so far are in $BACKUP_DIR (restore with ./rollback.sh)" >&2
+    fi
+}
+trap 'on_error $LINENO' ERR
 
 echo "=================================="
 echo "  Dotfiles Installation"
 echo "=================================="
 echo ""
 echo "Installing from: $DOTFILES_DIR"
+[ "$DRY_RUN" = true ] && echo "Mode: dry run (no changes will be made)"
 echo ""
 
-# Prerequisite checks
 echo "Checking prerequisites..."
 
-# Check write permissions
+if [ -z "${HOME:-}" ] || [ ! -d "$HOME" ]; then
+    echo "[ERROR] HOME is not set to an existing directory" >&2
+    exit 1
+fi
+
 if [ ! -w "$HOME" ]; then
     echo "[ERROR] No write permission to home directory: $HOME" >&2
     exit 1
 fi
 
-# Check required commands
-for cmd in ln mkdir mv rm; do
+if [ "$(id -u)" -eq 0 ]; then
+    echo "[WARNING] Running as root: dotfiles will be installed for root ($HOME)." >&2
+fi
+
+for cmd in ln mkdir mv rm readlink date; do
     if ! command -v "$cmd" > /dev/null 2>&1; then
         echo "[ERROR] Required command not found: $cmd" >&2
         exit 1
     fi
 done
 
-# Create required directories
-for dir in "$HOME/.config" "$HOME/.config/shell" "$HOME/.config/nvim" "$HOME/.cache/zsh"; do
+ZSH_CONFIG_DIR="$(resolve_zdotdir "$DOTFILES_DIR")"
+case "$ZSH_CONFIG_DIR" in
+    "$HOME" | "$HOME"/*) ;;
+    *)
+        echo "[ERROR] ZDOTDIR resolves outside \$HOME: $ZSH_CONFIG_DIR" >&2
+        exit 1
+        ;;
+esac
+
+for dir in "$HOME/.config" "$HOME/.config/shell" "$HOME/.config/nvim" "$HOME/.cache/zsh" "$ZSH_CONFIG_DIR"; do
     if [ ! -d "$dir" ]; then
-        mkdir -p "$dir" || {
-            echo "[ERROR] Failed to create directory: $dir" >&2
-            exit 1
-        }
+        run mkdir -p "$dir"
         echo "[CREATE] Directory: $dir"
     fi
 done
@@ -45,109 +109,112 @@ done
 echo "[OK] Prerequisites verified"
 echo ""
 
-# Determine zsh config directory (XDG Base Directory spec compliance)
-# BUG-056: Respect ZDOTDIR environment variable set by .zprofile
-# .zprofile sets ZDOTDIR=$HOME/.config/zsh (XDG spec)
-# Source .zprofile to get ZDOTDIR if it exists
-if [ -f "$DOTFILES_DIR/.zprofile" ]; then
-    # Set XDG_CONFIG_HOME first (needed for ZDOTDIR expansion)
-    export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+BACKUP_DIR="$HOME/${BACKUP_PREFIX}$(date +%Y%m%d_%H%M%S)"
+BACKED_UP=0
 
-    # Extract ZDOTDIR from .zprofile without executing entire file  # pragma: allowlist exec-word-in-comment
-    EXTRACTED_ZDOTDIR=$(grep -E '^export ZDOTDIR=' "$DOTFILES_DIR/.zprofile" | head -1 | sed 's/^export ZDOTDIR=//; s/"//g; s/'"'"'//g')
+# Move an existing target into the backup dir, keeping its path relative to $HOME
+backup_target() {
+    local target="$1" rel dest
+    rel="${target#"$HOME"/}"
+    dest="$BACKUP_DIR/$rel"
 
-    # Safely expand known variables (no eval to prevent command injection)  # pragma: allowlist eval-comment-doc
-    # Only expand allowlisted patterns: ${HOME}, ${XDG_CONFIG_HOME}, $HOME, $XDG_CONFIG_HOME
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{HOME\}/$HOME}"
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$HOME/$HOME}"
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$\{XDG_CONFIG_HOME\}/$XDG_CONFIG_HOME}"
-    EXTRACTED_ZDOTDIR="${EXTRACTED_ZDOTDIR//\$XDG_CONFIG_HOME/$XDG_CONFIG_HOME}"
-fi
-
-# Use extracted ZDOTDIR if found, otherwise fall back to $HOME
-ZSH_CONFIG_DIR="${EXTRACTED_ZDOTDIR:-$HOME}"
-
-# Create ZDOTDIR if it doesn't exist and is not $HOME
-if [ "$ZSH_CONFIG_DIR" != "$HOME" ] && [ ! -d "$ZSH_CONFIG_DIR" ]; then
-    mkdir -p "$ZSH_CONFIG_DIR" || {
-        echo "[ERROR] Failed to create ZDOTDIR: $ZSH_CONFIG_DIR" >&2
-        exit 1
-    }
-    echo "[CREATE] ZDOTDIR: $ZSH_CONFIG_DIR"
-fi
-
-# Backup and link function
-link_file() {
-    local source="$1"
-    local target="$2"
-
-    # Backup if exists and is not a symlink
-    if [ -e "$target" ] && [ ! -L "$target" ]; then
-        mkdir -p "$BACKUP_DIR"
-        echo "  Backing up existing $(basename "$target")"
-        mv "$target" "$BACKUP_DIR/"
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+        echo "[ERROR] Backup destination already exists: $dest" >&2
+        return 1
     fi
 
-    # Remove old symlink if exists
-    [ -L "$target" ] && rm "$target"
+    echo "  Backing up existing $rel"
+    run mkdir -p "$(dirname "$dest")"
+    run mv "$target" "$dest"
+    BACKED_UP=$((BACKED_UP + 1))
+}
 
-    # Create symlink
-    ln -sf "$source" "$target"
+link_file() {
+    local source="$1" target="$2" current
+
+    if [ ! -e "$source" ]; then
+        echo "[SKIP] $(basename "$source") not present in repo"
+        return 0
+    fi
+
+    if [ -L "$target" ]; then
+        current="$(readlink "$target")"
+        if [ "$current" = "$source" ]; then
+            echo "[OK] $(basename "$target") already linked"
+            return 0
+        fi
+        # A link into another checkout of this repo (same file name, next to an
+        # install.sh) is ours and gets replaced; any other symlink is backed up.
+        if [ "$(basename "$current")" = "$(basename "$source")" ] &&
+            [ -f "$(dirname "$current")/install.sh" ]; then
+            run rm "$target"
+        else
+            backup_target "$target"
+        fi
+    elif [ -e "$target" ]; then
+        if [ -d "$target" ]; then
+            echo "[ERROR] $target is a directory; move it away and re-run" >&2
+            return 1
+        fi
+        backup_target "$target"
+    fi
+
+    run ln -s "$source" "$target"
     echo "[SUCCESS] Linked $(basename "$target")"
 }
 
-# Link dotfiles
-link_file "$DOTFILES_DIR/.zshenv" "$HOME/.zshenv"
-link_file "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
-link_file "$DOTFILES_DIR/.zshrc" "$ZSH_CONFIG_DIR/.zshrc"
-link_file "$DOTFILES_DIR/.aliases" "$HOME/.aliases"
+while IFS=$'\t' read -r rel_source target; do
+    link_file "$DOTFILES_DIR/$rel_source" "$target"
+done < <(dotfiles_links "$ZSH_CONFIG_DIR")
 
-# Link inputrc for readline (bash, python REPL, etc.)
-if [ -f "$DOTFILES_DIR/inputrc" ]; then
-    link_file "$DOTFILES_DIR/inputrc" "$HOME/.config/shell/inputrc"
-fi
+# Remove links from older versions that point into a dotfiles checkout
+while IFS=$'\t' read -r rel_source target; do
+    if [ -L "$target" ] && [ "$(basename "$(readlink "$target")")" = "$rel_source" ] &&
+        [ -f "$(dirname "$(readlink "$target")")/install.sh" ]; then
+        run rm "$target"
+        echo "[CLEANUP] Removed obsolete link ${target#"$HOME"/}"
+    fi
+done < <(dotfiles_legacy_links "$ZSH_CONFIG_DIR")
 
-# Link neovim config
-if [ -f "$DOTFILES_DIR/init.vim" ]; then
-    link_file "$DOTFILES_DIR/init.vim" "$HOME/.config/nvim/init.vim"
-fi
-
-# Link gitconfig if exists
-if [ -f "$DOTFILES_DIR/.gitconfig" ]; then
-    link_file "$DOTFILES_DIR/.gitconfig" "$HOME/.gitconfig"
-fi
-
-# Link tmux config
-if [ -f "$DOTFILES_DIR/.tmux.conf" ]; then
-    link_file "$DOTFILES_DIR/.tmux.conf" "$HOME/.tmux.conf"
-fi
-
-# Link starship config
-if [ -f "$DOTFILES_DIR/starship.toml" ]; then
-    link_file "$DOTFILES_DIR/starship.toml" "$HOME/.config/starship.toml"
-fi
-
-# Generate shortcuts from bookmarks
 if [ -x "$DOTFILES_DIR/generate-shortcuts.sh" ]; then
     echo "Generating bookmark shortcuts"
-    "$DOTFILES_DIR/generate-shortcuts.sh"
+    run "$DOTFILES_DIR/generate-shortcuts.sh"
 fi
 
 echo ""
 echo "=================================="
-echo "[SUCCESS] Installation complete!"
+if [ "$DRY_RUN" = true ]; then
+    echo "[DRY RUN] No changes were made"
+else
+    echo "[SUCCESS] Installation complete!"
+fi
 echo "=================================="
 
-[ -d "$BACKUP_DIR" ] && echo "Backups saved to: $BACKUP_DIR"
+if [ "$BACKED_UP" -gt 0 ]; then
+    if [ "$DRY_RUN" = true ]; then
+        echo "Would back up $BACKED_UP item(s) to: $BACKUP_DIR"
+    else
+        echo "Backups saved to: $BACKUP_DIR ($BACKED_UP item(s))"
+    fi
+fi
+
+missing=()
+for tool in zsh nvim tmux starship fzf git; do
+    command -v "$tool" > /dev/null 2>&1 || missing+=("$tool")
+done
 
 echo ""
+if [ ${#missing[@]} -gt 0 ]; then
+    echo "Not installed yet: ${missing[*]}"
+    echo "  Debian/Ubuntu: sudo apt install zsh neovim tmux fzf git"        # pragma: allowlist sudo-install-doc
+    echo "  Arch:          sudo pacman -S zsh neovim tmux fzf git starship" # pragma: allowlist sudo-install-doc
+    echo "  Starship:      https://starship.rs/guide/#step-1-install-starship"
+    echo ""
+fi
 echo "Next steps:"
-echo "  1. Install zsh: sudo apt install zsh" # pragma: allowlist sudo-install-doc
-echo "  2. Set zsh as default: chsh -s \$(which zsh)"
-echo "  3. Install starship: curl -sS https://starship.rs/install.sh | sh" # pragma: allowlist starship-install-doc
-echo "  4. Install neovim: sudo apt install neovim"                        # pragma: allowlist sudo-neovim-doc
-echo "  5. Restart your shell (logout/login or exec zsh)"                  # pragma: allowlist exec-zsh-doc
-echo ""
+echo "  1. Set zsh as default: chsh -s \$(command -v zsh)"
+echo "  2. Restart your shell (logout/login or exec zsh)" # pragma: allowlist exec-zsh-doc
 if [ "$ZSH_CONFIG_DIR" != "$HOME" ]; then
+    echo ""
     echo "Note: .zshrc installed to $ZSH_CONFIG_DIR/.zshrc (ZDOTDIR)"
 fi

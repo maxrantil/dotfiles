@@ -2,20 +2,34 @@
 " Leader key
 let mapleader =","
 
-" Auto-install vim-plug if not present
-if ! filereadable(system('echo -n "${XDG_CONFIG_HOME:-$HOME/.config}/nvim/autoload/plug.vim"'))
-    echo "Downloading junegunn/vim-plug to manage plugins..."
-    silent !mkdir -p ${XDG_CONFIG_HOME:-$HOME/.config}/nvim/autoload/
-    silent !curl "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" > ${XDG_CONFIG_HOME:-$HOME/.config}/nvim/autoload/plug.vim
-    autocmd VimEnter * PlugInstall
+" Config directory (respects $XDG_CONFIG_HOME) without spawning a shell
+let s:config_dir = stdpath('config')
+
+" Auto-install vim-plug if not present.
+" Pinned to a release tag (not master) and fetched with -f so an HTTP error page is
+" never saved as plug.vim. Bump the tag deliberately when updating.
+let s:plug_version = '0.14.0'
+let s:plug_file = s:config_dir . '/autoload/plug.vim'
+if !filereadable(s:plug_file)
+    echo 'Downloading junegunn/vim-plug ' . s:plug_version . ' to manage plugins...'
+    call mkdir(fnamemodify(s:plug_file, ':h'), 'p')
+    call system(['curl', '-fsSL', '--proto', '=https', '--tlsv1.2', '-o', s:plug_file,
+                \ 'https://raw.githubusercontent.com/junegunn/vim-plug/' . s:plug_version . '/plug.vim'])
+    if v:shell_error
+        call delete(s:plug_file)
+        echohl WarningMsg | echo 'vim-plug download failed; plugins disabled for this session' | echohl None
+    else
+        autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+    endif
 endif
 
 " Quick template navigation
 map ,, :keepp /<++><CR>ca<
 imap ,, <esc>:keepp /<++><CR>ca<
 
-" Plugins
-call plug#begin(system('echo -n "${XDG_CONFIG_HOME:-$HOME/.config}/nvim/plugged"'))
+" Plugins (skipped cleanly if vim-plug is unavailable)
+if filereadable(s:plug_file)
+call plug#begin(s:config_dir . '/plugged')
 Plug 'tpope/vim-surround'              " Surround text objects
 Plug 'tpope/vim-commentary'            " Comment stuff out
 Plug 'tpope/vim-fugitive'              " Best git integration
@@ -31,6 +45,7 @@ Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'                " FZF integration
 Plug 'dense-analysis/ale'              " Linting and fixing
 call plug#end()
+endif
 
 " Colorscheme configuration
 set background=dark
@@ -62,7 +77,8 @@ set number relativenumber
 set encoding=utf-8
 
 " Undo configuration (XDG-compliant)
-set undodir=${XDG_CACHE_HOME:-$HOME/.cache}/nvim/undo
+let &undodir = (empty($XDG_CACHE_HOME) ? $HOME . '/.cache' : $XDG_CACHE_HOME) . '/nvim/undo'
+call mkdir(&undodir, 'p', 0700)
 set undofile
 nnoremap U :UndotreeToggle<CR>
 
@@ -73,8 +89,12 @@ syntax on
 set wildmode=longest,list,full
 set splitbelow splitright
 
+augroup dotfiles
+    autocmd!
+augroup END
+
 " Disable automatic commenting on newline
-autocmd FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o
+autocmd dotfiles FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o
 
 " Perform dot commands over visual blocks
 vnoremap . :normal .<CR>
@@ -123,7 +143,7 @@ map <leader>n :NERDTreeToggle<CR>
 map <leader>N :NERDTreeFind<CR>
 
 " Auto-close NERDTree if it's the only window left
-autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+autocmd dotfiles BufEnter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 
 " Git integration (vim-fugitive & gitgutter)
 map <leader>gs :Git<CR>
@@ -166,10 +186,15 @@ map <leader>af :ALEFix<CR>
 map <leader>s :!clear && shellcheck -x %<CR>
 
 " Automatically delete trailing whitespace on save
-autocmd BufWritePre * let currPos = getpos(".")
-autocmd BufWritePre * %s/\s\+$//e
-autocmd BufWritePre * %s/\n\+\%$//e
-autocmd BufWritePre * cal cursor(currPos[1], currPos[2])
+" (skipped for diff/patch files where trailing whitespace is meaningful)
+function! s:StripTrailing() abort
+    if &filetype =~# '^\(diff\|gitsendemail\)$' | return | endif
+    let l:view = winsaveview()
+    keeppatterns %s/\s\+$//e
+    keeppatterns %s/\n\+\%$//e
+    call winrestview(l:view)
+endfunction
+autocmd dotfiles BufWritePre * call s:StripTrailing()
 
 " Save file as sudo
 cabbrev w!! execute 'silent! write !sudo tee % >/dev/null' <bar> edit!

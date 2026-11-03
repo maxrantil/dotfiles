@@ -13,6 +13,11 @@ export XDG_CACHE_HOME="$HOME/.cache"
 # This is critical for XDG compliance - without it, zsh looks for .zshrc in $HOME
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 
+# Debian/Ubuntu's /etc/zsh/zshrc runs its own compinit (full audit, prompts on insecure
+# dirs) before ours unless this is set. .zshrc does a cached compinit itself.
+# shellcheck disable=SC2034  # read by /etc/zsh/zshrc
+skip_global_compinit=1
+
 # Default programs (needed for aliases like v=$EDITOR, e=$EDITOR)
 # Must be here (not .zprofile) so non-login shells have them
 export EDITOR="nvim"
@@ -33,5 +38,8 @@ elif command -v xdg-open >/dev/null 2>&1; then
 fi
 
 # Add ~/.local/bin to PATH
-# Required for non-login shells to find user scripts
-export PATH="$HOME/.local/bin:$PATH"
+# Required for non-login shells to find user scripts.
+# typeset -U keeps PATH free of duplicates when shells are nested (tmux, subshells)
+typeset -U path PATH
+path=("$HOME/.local/bin" "${path[@]}")
+export PATH

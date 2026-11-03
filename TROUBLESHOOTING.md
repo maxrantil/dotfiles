@@ -9,12 +9,17 @@ Quick fixes for common issues.
 chmod +x ~/.dotfiles/install.sh && ./install.sh
 ```
 
+**See what install would change first:**
+```bash
+cd ~/.dotfiles && ./install.sh --dry-run
+```
+
 **Symlink creation fails:**
 ```bash
-# Manually backup and retry
-mkdir -p ~/.dotfiles-backup
-mv ~/.zshrc ~/.tmux.conf ~/.aliases ~/.dotfiles-backup/
+# install.sh backs up existing files itself; it stops if a target is a directory
 cd ~/.dotfiles && ./install.sh
+# Undo an install (restores files to their original paths)
+./rollback.sh --dry-run && ./rollback.sh
 ```
 
 **Configs don't load after install:**
@@ -31,15 +36,13 @@ exec zsh
 
 **Zsh config not loading:**
 ```bash
-# Check symlink
-ls -la ~/.zshrc  # Should point to ~/.dotfiles/.zshrc
+# .zshenv sets ZDOTDIR, so .zshrc and .zprofile live there (not in ~)
+echo $ZDOTDIR                 # Should be ~/.config/zsh
+ls -la ~/.zshenv "$ZDOTDIR/.zshrc" "$ZDOTDIR/.zprofile"   # Should point into ~/.dotfiles
 
 # Test for errors
-zsh -n ~/.zshrc
-source ~/.zshrc
-
-# Verify XDG path
-echo $ZDOTDIR  # Should be ~/.config/zsh or empty
+zsh -n "$ZDOTDIR/.zshrc"
+exec zsh
 ```
 
 **Starship prompt missing:**
@@ -61,7 +64,7 @@ ls -la ~/.cache/starship/
 cat ~/.cache/zsh/distro  # Should show "debian" or "arch"
 
 # Regenerate if wrong
-rm ~/.cache/zsh/distro && source ~/.zshrc
+rm ~/.cache/zsh/distro && exec zsh
 ```
 
 **Bookmark shortcuts not found:**
@@ -73,7 +76,7 @@ cd ~/.dotfiles && ./generate-shortcuts.sh
 ls -la ~/.config/shell/shortcuts
 
 # Reload
-source ~/.zshrc
+exec zsh
 ```
 
 ## Tmux
@@ -159,10 +162,13 @@ cd ~/.dotfiles && ./install.sh
 **Measure startup time:**
 ```bash
 time zsh -i -c exit
-# Target: <100ms
+# Target: <100ms (about 10ms on a typical machine)
 
 # Profile to find bottlenecks
-zsh -i -c 'zmodload zsh/zprof; source ~/.zshrc; zprof'
+zsh -i -c 'zmodload zsh/zprof; source "$ZDOTDIR/.zshrc"; zprof'
+
+# The same check CI runs (fails above the budget)
+~/.dotfiles/tests/zsh-config-test.sh
 ```
 
 **Slow startup fixes:**
@@ -173,14 +179,8 @@ ls -la ~/.cache/starship/
 # 2. Check distro detection cache
 cat ~/.cache/zsh/distro
 
-# 3. Enable compinit caching (if not already)
-# Add to .zshrc before compinit:
-autoload -U compinit
-if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
-    compinit
-else
-    compinit -C
-fi
+# 3. Rebuild the completion cache (normally refreshed once a day)
+rm -f "$ZDOTDIR"/.zcompdump* && exec zsh
 ```
 
 **Tmux sluggish:**
@@ -198,20 +198,20 @@ tmux source-file ~/.tmux.conf
 **Find problematic config:**
 ```bash
 # Binary search: comment out half of .zshrc, reload, repeat
-vim ~/.zshrc
-source ~/.zshrc
+nvim "$ZDOTDIR/.zshrc"
+exec zsh
 
 # Or start minimal
-mv ~/.zshrc ~/.zshrc.backup
-echo "# Test" > ~/.zshrc
+mv "$ZDOTDIR/.zshrc" "$ZDOTDIR/.zshrc.backup"
+echo "# Test" > "$ZDOTDIR/.zshrc"
 # Add sections back one at a time
 ```
 
 **Check syntax errors:**
 ```bash
 # Zsh
-zsh -n ~/.zshrc
-zsh -n ~/.zprofile
+zsh -n "$ZDOTDIR/.zshrc"
+zsh -n "$ZDOTDIR/.zprofile"
 zsh -n ~/.dotfiles/.aliases
 
 # Shell scripts
@@ -226,7 +226,7 @@ nvim +checkhealth
 
 **Verify symlinks:**
 ```bash
-ls -la ~/.zshrc ~/.tmux.conf ~/.aliases ~/.gitconfig ~/.zprofile
+ls -la ~/.zshenv "$ZDOTDIR/.zshrc" "$ZDOTDIR/.zprofile" ~/.tmux.conf ~/.aliases ~/.gitconfig
 # All should point to ~/.dotfiles/[file]
 
 # Reinstall if broken
@@ -236,7 +236,7 @@ cd ~/.dotfiles && ./install.sh
 **Verbose debugging:**
 ```bash
 # Zsh startup trace
-zsh -xv ~/.zshrc 2>&1 | less
+zsh -xv "$ZDOTDIR/.zshrc" 2>&1 | less
 
 # Tmux verbose
 tmux -vv
@@ -252,9 +252,8 @@ GIT_TRACE=1 git status
 mkdir -p ~/dotfiles-backup-$(date +%Y%m%d)
 cp -r ~/.dotfiles ~/dotfiles-backup-$(date +%Y%m%d)/
 
-# 2. Remove everything
-rm -f ~/.zshrc ~/.tmux.conf ~/.aliases ~/.gitconfig ~/.zprofile
-rm -f ~/.config/nvim/init.vim
+# 2. Restore what install replaced (or skip if there was nothing before)
+cd ~/.dotfiles && ./rollback.sh -y
 rm -rf ~/.dotfiles
 
 # 3. Fresh install
@@ -268,11 +267,11 @@ exec zsh
 ## Quick Reference
 
 **Reload configs:**
-- `source ~/.zshrc` or `exec zsh`
+- `exec zsh`
 - `tmux source-file ~/.tmux.conf`
 
 **Test environment:**
-- `cd ~/.dotfiles && ./tests/docker-test.sh`
+- `cd ~/.dotfiles && ./tests/docker-test.sh --distro ubuntu` (or `arch`)
 
 **Key cache locations:**
 - Zsh: `~/.cache/zsh/`

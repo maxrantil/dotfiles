@@ -5,8 +5,9 @@
 # Dotfiles (symlinked to $HOME)
 cfa  $HOME/.aliases
 cfv  ${XDG_CONFIG_HOME:-$HOME/.config}/nvim/init.vim
-cfz  $HOME/.zshrc
-cfp  $HOME/.zprofile
+cfz  ${ZDOTDIR:-$HOME}/.zshrc
+cfp  ${ZDOTDIR:-$HOME}/.zprofile
+cfe  $HOME/.zshenv
 cfg  $HOME/.gitconfig
 cft  $HOME/.tmux.conf
 

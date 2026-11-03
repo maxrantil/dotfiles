@@ -95,7 +95,7 @@ test_critical_symlinks() {
 
     local errors=0
 
-    # Determine ZDOTDIR location (defaults to $HOME/.config/zsh per .zprofile)
+    # Determine ZDOTDIR location (defaults to $HOME/.config/zsh per .zshenv)
     local zdotdir="${TEST_HOME}/.config/zsh"
 
     # Check .zshrc in ZDOTDIR location
@@ -108,7 +108,7 @@ test_critical_symlinks() {
     fi
 
     # Check other critical symlinks
-    local other_links=(".zprofile" ".aliases" ".config/nvim/init.vim" ".tmux.conf" ".config/starship.toml")
+    local other_links=(".zshenv" ".config/zsh/.zprofile" ".aliases" ".config/nvim/init.vim" ".tmux.conf" ".config/starship.toml")
     for link in "${other_links[@]}"; do
         if [ ! -L "$TEST_HOME/$link" ]; then
             fail "$link not linked"
@@ -184,7 +184,8 @@ test_symlink_targets() {
         fi
     }
 
-    verify_target ".zprofile" "$WORKSPACE/.zprofile" || errors=$((errors + 1))
+    verify_target ".zshenv" "$WORKSPACE/.zshenv" || errors=$((errors + 1))
+    verify_target ".config/zsh/.zprofile" "$WORKSPACE/.zprofile" || errors=$((errors + 1))
     verify_target ".aliases" "$WORKSPACE/.aliases" || errors=$((errors + 1))
     verify_target ".config/nvim/init.vim" "$WORKSPACE/init.vim" || errors=$((errors + 1))
     verify_target ".tmux.conf" "$WORKSPACE/.tmux.conf" || errors=$((errors + 1))

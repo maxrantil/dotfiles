@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [master]
 
+# Least privilege: the called workflow only reads git history
+permissions:
+  contents: read
+
 jobs:
   verify-session-handoff:
     uses: maxrantil/.github/.github/workflows/session-handoff-check-reusable.yml@master

@@ -4,96 +4,75 @@
 # Runs for every shell session
 
 # Safe source function - verify ownership and permissions before sourcing files
-# Protects against sourcing files with insecure ownership/permissions
+# Protects against sourcing files with insecure ownership/permissions.
+# Uses zsh builtins only (zsh/stat, path modifiers): no external processes, so it
+# costs well under a millisecond per file instead of ~14ms.
 # Note: Small TOCTOU window exists between checks and sourcing (microseconds)
+zmodload -F zsh/stat b:zstat 2>/dev/null
 safe_source() {
-    local file="$1"
-    local owner perms parent_dir parent_owner realfile
+    # No "emulate -L" here: sourced files must be able to set options for the shell
+    local file="$1" parent
+    local -A st pst
 
     # Normalize path to absolute
-    [[ "$file" =~ ^/ ]] || file="$PWD/$file"
+    [[ "$file" = /* ]] || file="$PWD/$file"
 
     # Reject shell metacharacters in path
-    [[ ! "$file" =~ [\;\|\&\$\`] ]] || return 1
+    [[ "$file" != *[\;\|\&\$\`]* ]] || return 1
 
-    # Verify file exists and is regular file (not device, socket, etc.)
+    # Must be an existing regular file (-f follows symlinks; devices, fifos, sockets fail)
     [[ -f "$file" ]] || return 1
-    [[ ! -c "$file" && ! -b "$file" && ! -p "$file" && ! -S "$file" ]] || return 1
 
-    # Resolve symlinks to actual file
-    if [[ -L "$file" ]]; then
-        realfile=$(readlink -f "$file" 2>/dev/null)
-        [[ -n "$realfile" && -f "$realfile" ]] || return 1
-        file="$realfile"
-    fi
+    # Resolve symlinks to the real file
+    file="${file:A}"
+    [[ -f "$file" ]] || return 1
 
-    # Validate stat is available (fail closed)
-    if ! command -v stat >/dev/null 2>&1; then
-        echo "Warning: Cannot validate $file security (stat unavailable)" >&2
+    # Fail closed if we cannot inspect the file
+    if ! (( ${+builtins[zstat]} )); then
+        print -u2 "Warning: Cannot validate $file security (zsh/stat unavailable)"
         return 1
     fi
+    zstat -H st -- "$file" 2>/dev/null || return 1
+    parent="${file:h}"
+    zstat -H pst -- "$parent" 2>/dev/null || return 1
 
-    # Get file metadata
-    owner=$(stat -c '%U' "$file" 2>/dev/null || \
-            stat -f '%Su' "$file" 2>/dev/null)
-    perms=$(stat -c '%a' "$file" 2>/dev/null || \
-            stat -f '%Lp' "$file" 2>/dev/null)
-
-    # Validate stat output format
-    if [[ ! "$owner" =~ ^[a-zA-Z0-9_-]+$ ]] || [[ ! "$perms" =~ ^[0-7]{3,4}$ ]]; then
-        echo "Warning: Invalid stat output for $file" >&2
-        return 1
-    fi
-
-    # Validate USER environment variable
-    local actual_user=$(id -un)
-    [[ "$USER" == "$actual_user" ]] || USER="$actual_user"
-
-    # Check file ownership (allow root-owned system files in /usr/share)
-    if [[ "$owner" != "$USER" ]]; then
-        if [[ "$owner" == "root" && "$file" == /usr/share/* ]]; then
-            : # Allow root-owned system files (zsh plugins, etc.)
+    # Owner must be us, or root for system files under /usr/share (zsh plugins, fzf)
+    if (( st[uid] != EUID )); then
+        if (( st[uid] == 0 )) && [[ "$file" == /usr/share/* ]]; then
+            : # Allow root-owned system files
         else
-            echo "Warning: $file not owned by $USER (owner: $owner)" >&2
+            print -u2 "Warning: $file not owned by $USERNAME (uid ${st[uid]})"
             return 1
         fi
     fi
 
-    # Check parent directory ownership
-    parent_dir=$(dirname "$file")
-    parent_owner=$(stat -c '%U' "$parent_dir" 2>/dev/null || \
-                   stat -f '%Su' "$parent_dir" 2>/dev/null)
-
-    if [[ "$parent_owner" != "$USER" ]] && [[ "$parent_owner" != "root" ]]; then
-        echo "Warning: Parent directory of $file not owned by $USER or root" >&2
+    # Parent directory must be owned by us or root
+    if (( pst[uid] != EUID && pst[uid] != 0 )); then
+        print -u2 "Warning: Parent directory of $file not owned by $USERNAME or root"
         return 1
     fi
 
-    # Check permissions (reject world-writable, but allow group-writable like 664)
-    # Last digit meanings: 2=write, 4=read, 6=read+write, 7=read+write+exec
-    # Reject if world-writable (perms ending in 2, 3, 6, 7 for "other" field)
-    # Allow up to 664 (owner rw, group rw, other r) but not 666+ (world-writable)
-    local other_perms="${perms: -1}"
-    if [[ "$other_perms" =~ [2367] ]] || (( 10#$perms > 775 )); then
-        echo "Warning: $file has insecure permissions ($perms)" >&2
+    # Reject world-writable files and setuid/setgid/sticky bits; group-writable (664) is fine
+    local -i perms=$(( st[mode] & 8#7777 ))
+    if (( perms & 8#7002 )); then
+        print -u2 "Warning: $file has insecure permissions ($(( [##8] perms )))"
         return 1
     fi
 
     # Source the file (small TOCTOU window here, but acceptable for dotfiles)
     source "$file"
-    return $?
 }
 
 # Enable colors
 autoload -U colors && colors
 
 # Use Starship prompt if available, otherwise fall back to custom prompt
-if command -v starship > /dev/null 2>&1; then
+if (( $+commands[starship] )); then
     # Cache starship init to avoid subprocess on every startup
     STARSHIP_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/starship/init.zsh"
-    if [[ ! -f "$STARSHIP_CACHE" ]] || [[ $(command -v starship) -nt "$STARSHIP_CACHE" ]]; then
-        mkdir -p "$(dirname "$STARSHIP_CACHE")"
-        starship init zsh > "$STARSHIP_CACHE"
+    if [[ ! -s "$STARSHIP_CACHE" || "$commands[starship]" -nt "$STARSHIP_CACHE" ]]; then
+        mkdir -p "${STARSHIP_CACHE:h}"
+        starship init zsh >| "$STARSHIP_CACHE"
     fi
     source "$STARSHIP_CACHE"
 else
@@ -115,19 +94,37 @@ setopt INC_APPEND_HISTORY      # Write to history file immediately
 setopt SHARE_HISTORY           # Share history between sessions
 setopt HIST_IGNORE_SPACE       # Don't save commands starting with space
 
-# Disable ctrl-s to freeze terminal
-stty stop undef
+# Disable ctrl-s to freeze terminal (only meaningful on a real terminal)
+[[ -t 0 ]] && stty stop undef 2>/dev/null
 
 # Auto-completion with menu select
-autoload -U compinit
+autoload -Uz compinit
 zstyle ':completion:*' menu select
 zmodload zsh/complist
-# Only rebuild cache once per day
-if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
-    compinit
+# Full compinit (with security audit) at most once a day; otherwise trust the dump.
+# The glob must run outside [[ ]] (no globbing there), which is why the old check
+# always ran the slow path.
+_zcompdump="${ZDOTDIR:-$HOME}/.zcompdump"
+_zcompdump_stale=( "$_zcompdump"(N.mh+24) )
+if [[ ! -s "$_zcompdump" ]] || (( $#_zcompdump_stale )); then
+    # -i: skip completion code from insecure (group/world-writable) directories instead
+    # of prompting, which aborted compinit entirely when no terminal could answer
+    autoload -Uz compaudit
+    _zinsecure=( ${(f)"$(compaudit 2>/dev/null)"} )
+    if (( $#_zinsecure )) && [[ -t 2 ]]; then
+        print -u2 "zsh: ignoring completions from insecure directories: ${(j:, :)_zinsecure}"
+    fi
+    unset _zinsecure
+    compinit -i -d "$_zcompdump"
+    touch "$_zcompdump"            # compinit only rewrites the dump if something changed
 else
-    compinit -C  # Skip security check
+    compinit -C -d "$_zcompdump"
 fi
+# Compile the dump in the background so later shells load it faster
+if [[ ! "$_zcompdump.zwc" -nt "$_zcompdump" ]]; then
+    { zcompile "$_zcompdump" } &!
+fi
+unset _zcompdump _zcompdump_stale
 _comp_options+=(globdots)      # Include hidden files in completions
 
 # Vi mode
@@ -161,7 +158,7 @@ zle-line-init() {
     echo -ne "\e[5 q"
 }
 zle -N zle-line-init
-echo -ne '\e[5 q'                # Use beam shape cursor on startup
+[[ -t 1 ]] && echo -ne '\e[5 q'  # Use beam shape cursor on startup
 preexec() { echo -ne '\e[5 q' ;} # Use beam shape cursor for each new prompt
 
 # Edit line in vim with ctrl-e (in normal mode)
@@ -171,6 +168,7 @@ bindkey -M vicmd '^e' edit-command-line
 
 # lf file manager integration - Ctrl+O to browse and cd
 lfcd () {
+    local tmp dir
     tmp="$(mktemp -uq)"
     trap 'rm -f $tmp >/dev/null 2>&1 && trap - HUP INT QUIT TERM PWR EXIT' HUP INT QUIT TERM PWR EXIT
     lf -last-dir-path="$tmp" "$@"
@@ -184,12 +182,19 @@ bindkey -s '^o' '^ulfcd\n'
 # fzf-based cd to directory containing selected file - Ctrl+F
 bindkey -s '^f' '^ucd "$(dirname "$(fzf)")"\n'
 
-# FZF integration (if installed)
-if [ -f /usr/share/fzf/key-bindings.zsh ]; then
-    safe_source /usr/share/fzf/key-bindings.zsh
-    safe_source /usr/share/fzf/completion.zsh
-elif [ -f ~/.fzf.zsh ]; then
-    safe_source ~/.fzf.zsh
+# FZF integration (if installed). Key bindings need the line editor, which only
+# exists on a terminal; loading them without one prints "can't change option: zle".
+if [[ -o zle && -t 0 ]]; then
+    if [[ -f /usr/share/fzf/key-bindings.zsh ]]; then                 # Arch
+        safe_source /usr/share/fzf/key-bindings.zsh
+        safe_source /usr/share/fzf/completion.zsh
+    elif [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then  # Debian/Ubuntu
+        safe_source /usr/share/doc/fzf/examples/key-bindings.zsh
+        [[ -f /usr/share/zsh/vendor-completions/_fzf ]] || \
+            safe_source /usr/share/doc/fzf/examples/completion.zsh
+    elif [[ -f ~/.fzf.zsh ]]; then
+        safe_source ~/.fzf.zsh
+    fi
 fi
 
 # NVM (Node Version Manager) lazy loading
@@ -213,17 +218,21 @@ fi
 # Load bookmark shortcuts (cf, sc, etc.)
 [ -f ~/.config/shell/shortcutrc ] && safe_source ~/.config/shell/shortcutrc
 
-# Load distro-specific aliases
-if [[ ! -f "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro" ]]; then
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
-        echo "$ID" > "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro"
-    fi
+# Load distro-specific aliases (distro ID cached once; /etc/os-release is parsed, not
+# sourced, so its NAME/VERSION/ID variables don't leak into the interactive shell)
+_distro_cache="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro"
+if [[ ! -s "$_distro_cache" && -r /etc/os-release ]]; then
+    () {
+        local line id
+        while IFS= read -r line; do
+            [[ "$line" == ID=* ]] && { id="${${line#ID=}//[\"\']/}"; break; }
+        done < /etc/os-release
+        [[ -n "$id" ]] && mkdir -p "${_distro_cache:h}" && print -r -- "$id" >| "$_distro_cache"
+    }
 fi
 
-if [ -f "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro" ]; then
-    DISTRO=$(cat "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro")
+if [[ -s "$_distro_cache" ]]; then
+    DISTRO="$(<"$_distro_cache")"
     case "$DISTRO" in
         ubuntu|debian|pop)
             [ -f ~/.dotfiles/distro/debian/.aliases_debian ] && safe_source ~/.dotfiles/distro/debian/.aliases_debian
@@ -233,6 +242,7 @@ if [ -f "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/distro" ]; then
             ;;
     esac
 fi
+unset _distro_cache
 
 # Syntax highlighting (if installed via apt)
 if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then

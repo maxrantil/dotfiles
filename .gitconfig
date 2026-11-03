@@ -11,7 +11,8 @@
 	br = branch
 	ca = commit --amend
 	ch = checkout
-	cleanup = !git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d
+	# Delete local branches merged into the current one; never the current, master or main
+	cleanup = "!git branch --merged | grep -vE '^[*+]|^ *(master|main)$' | xargs -r -n 1 git branch -d"
 	co = commit -v
 	cpn = cherry-pick -n
 	d = diff
@@ -84,6 +85,13 @@
 	newHighlight = green bold 22
 [init]
 	defaultBranch = master
+# Verify object integrity on every transfer (catches corrupt or malicious packs)
+[transfer]
+	fsckObjects = true
+[fetch]
+	fsckObjects = true
+[receive]
+	fsckObjects = true
 [commit]
 	gpgsign = false
 [merge "ours"]

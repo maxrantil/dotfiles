@@ -9,7 +9,7 @@ repos:
   # GENERAL FILE QUALITY & SECURITY CHECKS
   # =============================================================================
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       # Security
       - id: detect-private-key
@@ -66,7 +66,7 @@ repos:
   # SHELL SCRIPT LINTING (if repo has shell scripts)
   # =============================================================================
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
         name: ShellCheck bash scripts
@@ -79,7 +79,7 @@ repos:
   # MARKDOWN LINTING (for documentation)
   # =============================================================================
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.42.0
+    rev: v0.50.0
     hooks:
       - id: markdownlint
         name: Markdown linting
