@@ -107,7 +107,15 @@ zmodload zsh/complist
 _zcompdump="${ZDOTDIR:-$HOME}/.zcompdump"
 _zcompdump_stale=( "$_zcompdump"(N.mh+24) )
 if [[ ! -s "$_zcompdump" ]] || (( $#_zcompdump_stale )); then
-    compinit -d "$_zcompdump"
+    # -i: skip completion code from insecure (group/world-writable) directories instead
+    # of prompting, which aborted compinit entirely when no terminal could answer
+    autoload -Uz compaudit
+    _zinsecure=( ${(f)"$(compaudit 2>/dev/null)"} )
+    if (( $#_zinsecure )) && [[ -t 2 ]]; then
+        print -u2 "zsh: ignoring completions from insecure directories: ${(j:, :)_zinsecure}"
+    fi
+    unset _zinsecure
+    compinit -i -d "$_zcompdump"
     touch "$_zcompdump"            # compinit only rewrites the dump if something changed
 else
     compinit -C -d "$_zcompdump"
